@@ -27,7 +27,7 @@ def keep_alive():
     t.start()
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = '9250666051:AAGJO4fJQOnRNIFK-tNmaTvVeZkG3fgPeKE'
+BOT_TOKEN = '9250666051:AAGDNGYDGrvEJ_XcwkyH-sQemQc5NFwMyqo'
 ADMIN_ID = '1192292768'
 
 # Настройки ЮKassa (пока пустые, заполним позже)

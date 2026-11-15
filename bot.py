@@ -1,17 +1,13 @@
-import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
-import requests
-import json
-
-import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
-import requests
-import json
-
-from flask import Flask
-from threading import Thread
 import os
+import json
+import requests
+from threading import Thread
+from flask import Flask
 
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
+
+# --- ФЕЙКОВЫЙ ВЕБ-СЕРВЕР ДЛЯ RENDER ---
 app = Flask(__name__)
 
 @app.route('/')
@@ -20,23 +16,22 @@ def home():
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
-    serve(app, host='0.0.0.0', port=port)
+    # Запуск без неимпортированного serve
+    app.run(host='0.0.0.0', port=port)
 
 def keep_alive():
-    t = Thread(target=run_flask)
+    t = Thread(target=run_flask, daemon=True)
     t.start()
 
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = '9250666051:AAGDNGYDGrvEJ_XcwkyH-sQemQc5NFwMyqo'
-ADMIN_ID = '1192292768'
+ADMIN_ID = 1192292768  # Лучше числом
 
-# Настройки ЮKassa (пока пустые, заполним позже)
 YOOKASSA_SHOP_ID = '' 
 YOOKASSA_SECRET_KEY = ''
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Временное хранилище для ID клиентов
 user_pending_ids = {}
 
 # --- ФУНКЦИЯ ГЕНЕРАЦИИ КЛЮЧА ---
@@ -46,7 +41,7 @@ def generate_key(device_id):
     except ValueError:
         return None
 
-# --- ОБРАБОТЧИК КОМАНДЫ /start ---
+# --- ОБРАБОТЧИКИ СООБЩЕНИЙ ---
 @bot.message_handler(commands=['start'])
 def start_message(message):
     bot.send_message(
@@ -56,7 +51,6 @@ def start_message(message):
         parse_mode='Markdown'
     )
 
-# --- ОБРАБОТЧИК ТЕКСТОВЫХ СООБЩЕНИЙ (ID) ---
 @bot.message_handler(content_types=['text'])
 def handle_id(message):
     text = message.text.strip()
@@ -65,7 +59,6 @@ def handle_id(message):
         device_id = text
         user_pending_ids[message.from_user.id] = device_id
         
-        # Создаем кнопки выбора оплаты
         markup = InlineKeyboardMarkup()
         btn_stars = InlineKeyboardButton("⭐ Оплатить звёздами", callback_data="pay_stars")
         btn_card = InlineKeyboardButton("💳 Оплатить картой", callback_data="pay_card")
@@ -84,41 +77,33 @@ def handle_id(message):
             "⚠️ Пожалуйста, отправьте только цифры (ID оборудования)."
         )
 
-# --- ОБРАБОТЧИК КНОПОК (ЗВЕЗДЫ ИЛИ КАРТА) ---
 @bot.callback_query_handler(func=lambda call: call.data in ['pay_stars', 'pay_card'])
 def handle_payment_choice(call):
     user_id = call.from_user.id
     
     if call.data == 'pay_stars':
-        # Логика оплаты Stars
         bot.answer_callback_query(call.id, "Выбрана оплата звёздами")
         bot.send_invoice(
             chat_id=user_id,
             title="Лицензия Quantum Terminal",
             description="Активация Pro-версии калькулятора",
             invoice_payload="license_payload",
-            provider_token="",  # Для Stars это поле должно быть пустым
-            currency="XTR",     # XTR - это код валюты Telegram Stars
-            prices=[LabeledPrice(label="Лицензия", amount=100)] # 100 Stars (можете изменить)
+            provider_token="",  # Для Stars оставляем пустым
+            currency="XTR",
+            prices=[LabeledPrice(label="Лицензия", amount=100)]
         )
     
     elif call.data == 'pay_card':
-        # Логика оплаты картой (ЮKassa)
         if not YOOKASSA_SHOP_ID or not YOOKASSA_SECRET_KEY:
-            # Если ключи ЮKassa еще не вписаны
             bot.answer_callback_query(call.id, "Оплата картой временно недоступна. Используйте звёзды.", show_alert=True)
         else:
-            # Здесь будет код создания платежа в ЮKassa (добавим позже)
             bot.answer_callback_query(call.id, "Перенаправление на оплату картой...")
-            # Временная заглушка
             bot.send_message(user_id, "Функция оплаты картой находится в разработке.")
 
-# --- ОБРАБОТЧИК ПРЕДВАРИТЕЛЬНОЙ ПРОВЕРКИ (ДЛЯ STARS) ---
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def checkout(pre_checkout_query):
     bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
 
-# --- ОБРАБОТЧИК УСПЕШНОЙ ОПЛАТЫ STARS ---
 @bot.message_handler(content_types=['successful_payment'])
 def got_payment(message):
     user_id = message.from_user.id
@@ -136,7 +121,6 @@ def got_payment(message):
                 parse_mode='Markdown'
             )
             
-            # Уведомление админу
             bot.send_message(
                 ADMIN_ID,
                 f"💰 Оплата Stars получена!\n"
@@ -151,8 +135,10 @@ def got_payment(message):
     else:
         bot.send_message(user_id, "❌ Не удалось найти ваш ID. Отправьте его заново.")
 
-# --- ЗАПУСК БОТА ---
+# --- ЗАПУСК ---
 if __name__ == '__main__':
-    print("Бот запущен...")
+    print("Запуск веб-сервера...")
     keep_alive()
-    bot.infinity_polling()
+    print("Бот запущен в режиме polling...")
+    bot.infinity_polling(skip_pending=True)
+    

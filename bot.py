@@ -156,5 +156,3 @@ if __name__ == '__main__':
     print("Бот запущен...")
     keep_alive()
     bot.infinity_polling()
-
-

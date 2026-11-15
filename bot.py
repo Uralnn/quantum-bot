@@ -3,6 +3,29 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPri
 import requests
 import json
 
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
+import requests
+import json
+
+from flask import Flask
+from threading import Thread
+import os
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_flask)
+    t.start()
+
 # --- НАСТРОЙКИ ---
 BOT_TOKEN = '9250666051:AAGJO4fJQOnRNIFK-tNmaTvVeZkG3fgPeKE'
 ADMIN_ID = '1192292768'
@@ -131,6 +154,7 @@ def got_payment(message):
 # --- ЗАПУСК БОТА ---
 if __name__ == '__main__':
     print("Бот запущен...")
+    keep_alive()
     bot.infinity_polling()
 
 

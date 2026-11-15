@@ -24,7 +24,7 @@ def keep_alive():
     t.start()
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = '9250666051:AAEC3KaQCB7e-SvIE-oQ0uNF71d6h3kS6qs'
+BOT_TOKEN = '9250666051:AAHbnlh8pf6aZBArzFDeNvfmNTS90n6IGQc'
 ADMIN_ID = 1192292768  # Лучше числом
 
 YOOKASSA_SHOP_ID = '' 
@@ -139,6 +139,7 @@ def got_payment(message):
 if __name__ == '__main__':
     print("Запуск веб-сервера...")
     keep_alive()
+    bot.remove_webhook()
     print("Бот запущен в режиме polling...")
     bot.infinity_polling(skip_pending=True)
     

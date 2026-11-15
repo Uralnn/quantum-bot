@@ -24,7 +24,7 @@ def keep_alive():
     t.start()
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = '9250666051:AAGDNGYDGrvEJ_XcwkyH-sQemQc5NFwMyqo'
+BOT_TOKEN = '9250666051:AAEC3KaQCB7e-SvIE-oQ0uNF71d6h3kS6qs'
 ADMIN_ID = 1192292768  # Лучше числом
 
 YOOKASSA_SHOP_ID = '' 

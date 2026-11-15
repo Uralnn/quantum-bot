@@ -4,7 +4,7 @@ import requests
 import json
 
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = '9250666051:AAEhBmJWwxlMxjBDgKkqw-1_INT4Jjpr5mw'
+BOT_TOKEN = '9250666051:AAGJO4fJQOnRNIFK-tNmaTvVeZkG3fgPeKE'
 ADMIN_ID = '1192292768'
 
 # Настройки ЮKassa (пока пустые, заполним позже)

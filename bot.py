@@ -1,6 +1,6 @@
 import os
 import time
-from flask import Flask, request, abort
+from flask import Flask, request, abort, jsonify
 
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
@@ -18,6 +18,13 @@ RENDER_URL = os.environ.get('RENDER_EXTERNAL_URL')
 
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
+
+@app.after_request
+def add_cors_headers(response):        
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS'
+    return response
 
 user_pending_ids = {}
 

@@ -77,7 +77,7 @@ def handle_payment_choice(call):
             invoice_payload="license_payload",
             provider_token="",
             currency="XTR",
-            prices=[LabeledPrice(label="Лицензия", amount=100)]
+            prices=[LabeledPrice(label="Лицензия", amount=235)]
         )
     
     elif call.data == 'pay_card':

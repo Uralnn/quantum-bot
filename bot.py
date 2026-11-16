@@ -1,36 +1,23 @@
 import os
-import json
-import requests
-from threading import Thread
-from flask import Flask
+import time
+from flask import Flask, request, abort
 
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
 
-# --- ФЕЙКОВЫЙ ВЕБ-СЕРВЕР ДЛЯ RENDER ---
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 8080))
-    # Запуск без неимпортированного serve
-    app.run(host='0.0.0.0', port=port)
-
-def keep_alive():
-    t = Thread(target=run_flask, daemon=True)
-    t.start()
-
 # --- НАСТРОЙКИ ---
-BOT_TOKEN = '9250666051:AAHbnlh8pf6aZBArzFDeNvfmNTS90n6IGQc'
-ADMIN_ID = 1192292768  # Лучше числом
+# На Render лучше задать эти значения в разделе Environment Variables
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '9250666051:AAHbnlh8pf6aZBArzFDeNvfmNTS90n6IGQc')
+ADMIN_ID = int(os.environ.get('ADMIN_ID', 1192292768))  # Замените на ваш числовой ID
 
-YOOKASSA_SHOP_ID = '' 
-YOOKASSA_SECRET_KEY = ''
+YOOKASSA_SHOP_ID = os.environ.get('YOOKASSA_SHOP_ID', '')
+YOOKASSA_SECRET_KEY = os.environ.get('YOOKASSA_SECRET_KEY', '')
+
+# Render автоматически создает переменную RENDER_EXTERNAL_URL (например, https://onrender.com)
+RENDER_URL = os.environ.get('RENDER_EXTERNAL_URL')
 
 bot = telebot.TeleBot(BOT_TOKEN)
+app = Flask(__name__)
 
 user_pending_ids = {}
 
@@ -88,7 +75,7 @@ def handle_payment_choice(call):
             title="Лицензия Quantum Terminal",
             description="Активация Pro-версии калькулятора",
             invoice_payload="license_payload",
-            provider_token="",  # Для Stars оставляем пустым
+            provider_token="",
             currency="XTR",
             prices=[LabeledPrice(label="Лицензия", amount=100)]
         )
@@ -135,11 +122,28 @@ def got_payment(message):
     else:
         bot.send_message(user_id, "❌ Не удалось найти ваш ID. Отправьте его заново.")
 
-# --- ЗАПУСК ---
-if __name__ == '__main__':
-    print("Запуск веб-сервера...")
-    keep_alive()
+# --- ВЕБХУКИ ДЛЯ TELEGRAM ---
+@app.route('/')
+def home():
+    return "Bot is running via Webhooks!", 200
+
+@app.route(f'/{BOT_TOKEN}', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    else:
+        abort(403)
+
+# Настройка вебхука при запуске
+if RENDER_URL:
     bot.remove_webhook()
-    print("Бот запущен в режиме polling...")
-    bot.infinity_polling(skip_pending=True)
-    
+    time.sleep(1)
+    bot.set_webhook(url=f"{RENDER_URL}/{BOT_TOKEN}")
+    print(f"Вебхук успешно установлен на {RENDER_URL}")
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host='0.0.0.0', port=port)

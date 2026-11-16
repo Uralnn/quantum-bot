@@ -122,10 +122,31 @@ def got_payment(message):
     else:
         bot.send_message(user_id, "❌ Не удалось найти ваш ID. Отправьте его заново.")
 
-# --- ВЕБХУКИ ДЛЯ TELEGRAM ---
+# --- ВЕБХУКИ И ПРОВЕРКА ЛИЦЕНЗИИ ---
 @app.route('/')
 def home():
     return "Bot is running via Webhooks!", 200
+
+@app.route('/validate', methods=['POST', 'OPTIONS'])
+def validate_license():
+    # Разрешаем запросы с любых устройств и локальных файлов (CORS)
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
+        response.headers.add('Access-Control-Allow-Methods', 'POST')
+        return response
+
+    data = request.get_json(silent=True) or {}
+    device_id = str(data.get('id', '')).strip()
+    user_key = str(data.get('key', '')).strip()
+
+    expected_key = generate_key(device_id)
+    is_valid = (expected_key is not None and user_key == expected_key)
+
+    response = jsonify({'activated': is_valid})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route(f'/{BOT_TOKEN}', methods=['POST'])
 def webhook():

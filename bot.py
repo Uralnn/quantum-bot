@@ -35,13 +35,23 @@ def generate_key(device_id):
     except ValueError:
         return None
 
+# --- ССЫЛКА НА УСТАНОВЩИК ---
+PC_DOWNLOAD_URL = "http://uralnn0." + "beget.tech/" + "QuantumTerminal_Setup.exe"
+
 # --- ОБРАБОТЧИКИ СООБЩЕНИЙ ---
 @bot.message_handler(commands=['start'])
 def start_message(message):
+    markup = InlineKeyboardMarkup(row_width=1)
+    btn_pc = InlineKeyboardButton("💻 Скачать для ПК (Windows)", url=PC_DOWNLOAD_URL)
+    markup.add(btn_pc)
+
     bot.send_message(
         message.chat.id,
-        "👋 Привет! Я бот для выдачи лицензионных ключей.\n\n"
-        "Отправьте мне **ID вашего оборудования** (цифры, которые вы видите на экране программы):",
+        "👋 Привет! Я бот для установки и активации калькулятора.\n\n"
+        "1. Нажмите кнопку ниже, чтобы скачать установочный файл для компьютера.\n"
+        "2. Установите и запустите программу.\n"
+        "3. Отправьте мне **ID вашего оборудования** (цифры с экрана) для получения ключа:",
+        reply_markup=markup,
         parse_mode='Markdown'
     )
 

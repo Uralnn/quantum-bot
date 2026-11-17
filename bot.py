@@ -29,7 +29,7 @@ def generate_key(device_id):
         return None
 
 # --- НАСТРОЙКИ ССЫЛОК И ЦЕН ---
-PC_DOWNLOAD_URL = "https://github.com" + "quantum-bot/releases/download/v1.0/" + "QuantumTerminal_Setup.exe"
+PC_DOWNLOAD_URL = "https://github.com/Uralnn/quantum-bot/releases/download/v1.0/QuantumTerminal_Setup.exe"
 SUPPORT_LINK = "@Dmitryshir"  # Можете заменить на @ваш_канал или https://t.me
 PRICE_RUB = 260
 PRICE_STARS = 235

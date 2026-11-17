@@ -36,7 +36,7 @@ def generate_key(device_id):
         return None
 
 # --- ССЫЛКА НА УСТАНОВЩИК ---
-PC_DOWNLOAD_URL = "http://uralnn0." + "beget.tech/" + "QuantumTerminal_Setup.exe"
+PC_DOWNLOAD_URL = "https://github.com/Uralnn/quantum-bot/releases/download/v1.0/QuantumTerminal_Setup.exe"
 
 # --- ОБРАБОТЧИКИ СООБЩЕНИЙ ---
 @bot.message_handler(commands=['start'])

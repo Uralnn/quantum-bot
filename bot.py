@@ -147,8 +147,11 @@ def handle_payment_choice(call):
                 parse_mode="Markdown",
                 reply_markup=markup
             )
+                except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="ignore")
+            bot.send_message(user_id, f"❌ Ошибка ЮKassa ({e.code}):\n{err_body}")
         except Exception as e:
-            bot.send_message(user_id, f"❌ Не удалось создать платёж. Попробуйте позже или напишите в поддержку {SUPPORT_LINK}.")
+            bot.send_message(user_id, f"❌ Ошибка: {e}")
 
 # --- ПОДТВЕРЖДЕНИЕ ОПЛАТЫ И ВЫДАЧА КЛЮЧА ---
 @bot.pre_checkout_query_handler(func=lambda query: True)

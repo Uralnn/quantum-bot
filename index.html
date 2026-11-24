@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quantum Logistics & Engineering Terminal v4</title>
+    <style>
+        :root { --bg: #020406; --box: #060b0f; --cyan: #00f3ff; --dim: #00a8b5; --dark: #00242a; --text: #c8f3f7; --btn: #0c1218; --matrix: #ff0055; --amber: #ffaa00; }
+        body.theme-light { --bg: #e2e8f0; --box: #ffffff; --cyan: #0284c7; --dim: #0369a1; --dark: #cbd5e1; --text: #0f172a; --btn: #f1f5f9; }
+        body.theme-amber { --bg: #120c00; --box: #1c1400; --cyan: #ffaa00; --dim: #d97706; --dark: #451a03; --text: #fef3c7; --btn: #2d1f00; }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; min-height: 100vh; margin: 0; transition: background 0.2s, color 0.2s; }
+        .workspace { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: center; padding: 24px; min-height: 100vh; }
+
+        .calculator { background: var(--box); border: 2px solid var(--dark); border-radius: 26px; padding: 28px; width: 560px; max-width: 100%; box-shadow: 0 0 40px rgba(0, 243, 255, 0.15); position: relative; z-index: 1; transition: background 0.2s, border-color 0.2s; }
+        body.theme-light .calculator { box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12); }
+        body.theme-amber .calculator { box-shadow: 0 0 40px rgba(255, 170, 0, 0.15); }
+
+        .display-container { background: #010203; border: 1px solid var(--dark); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: inset 0 0 20px #000; }
+        body.theme-light .display-container { background: #f8fafc; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
+        body.theme-amber .display-container { background: #0a0700; }
+
+        .status-bar { display: flex; justify-content: space-between; color: var(--dim); font-size: 0.78rem; font-family: monospace; margin-bottom: 6px; padding-bottom: 5px; border-bottom: 1px dashed var(--dark); }
+        .status-bar span { opacity: 0.4; transition: opacity 0.15s; }
+        .status-bar span:first-child { opacity: 0.8; }
+        .status-bar span.active, .status-bar span.shift-active, .status-bar span.matrix-active { opacity: 1; }
+        .active { color: var(--cyan); text-shadow: 0 0 5px var(--cyan); }
+        .shift-active { color: var(--amber) !important; text-shadow: 0 0 5px var(--amber) !important; }
+        .matrix-active { color: var(--matrix) !important; text-shadow: 0 0 5px var(--matrix) !important; }
+
+        .history { color: var(--dim); font-size: 0.95rem; text-align: right; min-height: 20px; margin-bottom: 6px; font-family: monospace; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .current-input { color: var(--cyan); font-size: 2.3rem; text-align: right; font-family: monospace; font-weight: bold; text-shadow: 0 0 8px rgba(0, 243, 255, 0.5); overflow: hidden; white-space: nowrap; border-radius: 6px; }
+        .current-input.flash { animation: flash 0.7s; }
+        @keyframes flash { from { background: rgba(34,197,94,0.3); } to { background: transparent; } }
+        body.theme-light .current-input { text-shadow: none; }
+        body.theme-amber .current-input { text-shadow: 0 0 8px rgba(255, 170, 0, 0.5); }
+
+        .plotter-container { background: #010305; border: 1px solid var(--dark); border-radius: 12px; margin-bottom: 16px; padding: 6px; }
+        body.theme-light .plotter-container { background: #f1f5f9; }
+        body.theme-amber .plotter-container { background: #0a0700; }
+        canvas { display: block; background: #020508; border-radius: 7px; width: 100%; height: 120px; }
+        body.theme-light canvas { background: #ffffff; }
+        body.theme-amber canvas { background: #050300; }
+
+        .buttons-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 9px; margin-bottom: 16px; }
+        button { background: var(--btn); border: 1px solid rgba(0, 243, 255, 0.06); border-radius: 8px; color: var(--text); padding: 15px 2px; font-size: 0.95rem; font-family: monospace; cursor: pointer; transition: all 0.1s; position: relative; overflow: hidden; outline: none; }
+        body.theme-light button { border-color: #cbd5e1; }
+        body.theme-amber button { border-color: rgba(255, 170, 0, 0.08); }
+        button:hover { border-color: var(--dim); color: #fff; box-shadow: 0 0 8px rgba(0, 243, 255, 0.2); }
+        body.theme-light button:hover { color: var(--cyan); background: #e2e8f0; }
+        button:active { transform: scale(0.96); }
+        button:focus-visible { border-color: var(--cyan); }
+
+        button.operator { color: var(--cyan); font-weight: bold; }
+        button.fn { color: #8ab4f8; background: #080e14; }
+        button.mtx { color: #ff5588; background: #16060c; }
+        button.shift { color: #fff; background: #1c1200; border-color: rgba(255,170,0,0.15); }
+        button.fuel-btn { color: var(--amber); background: #1a1100; border-color: rgba(255,170,0,0.1); }
+        button.theme-btn { color: #a78bfa; background: #1e1b4b; border-color: rgba(167,139,250,0.2); }
+        button.help-btn { color: #4ade80; background: #04140b; border-color: rgba(74,222,128,0.25); font-weight: bold; }
+        button.clear { color: #ff5252; background: #140808; }
+        button.clear:hover { background: #220a0a; border-color: #ff5252; }
+        button.equals { grid-column: span 2; background: linear-gradient(135deg, var(--dark), #003b44); color: #fff; font-weight: bold; border-color: var(--cyan); }
+        button.equals:hover { background: linear-gradient(135deg, var(--dim), var(--cyan)); color: #020406; box-shadow: 0 0 15px var(--cyan); }
+
+        /* Тема LAB LIGHT */
+        body.theme-light button.fn { color: #0284c7; background: #f8fafc; }
+        body.theme-light button.mtx { color: #be123c; background: #fff1f2; }
+        body.theme-light button.shift { color: #92400e; background: #fffbeb; border-color: rgba(217,119,6,0.3); }
+        body.theme-light button.fuel-btn { color: #b45309; background: #fffbeb; }
+        body.theme-light button.theme-btn { color: #6d28d9; background: #ede9fe; }
+        body.theme-light button.help-btn { color: #15803d; background: #f0fdf4; }
+        body.theme-light button.clear { color: #dc2626; background: #fef2f2; }
+        body.theme-light button.equals { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; }
+
+        /* Тема AMBER MATRIX */
+        body.theme-amber button.fn { color: #fbbf24; background: #1f1600; }
+        body.theme-amber button.equals { background: linear-gradient(135deg, #451a03, #78350f); }
+        body.theme-amber button.equals:hover { background: linear-gradient(135deg, var(--dim), var(--cyan)); }
+
+        /* Активные режимы */
+        body button.shift.active-mode { background: var(--amber); color: #000; box-shadow: 0 0 10px var(--amber); }
+        body button.mtx.active-mode { background: var(--matrix); color: #000; box-shadow: 0 0 10px var(--matrix); }
+        body button.help-btn.active-mode { background: #22c55e; color: #000; box-shadow: 0 0 10px #22c55e; }
+        body.help-pick button.help-btn { animation: blink 0.8s infinite; }
+        body.help-pick .buttons-grid button { cursor: help; }
+        @keyframes blink { 50% { opacity: 0.4; } }
+
+        .terminal-log { background: #010204; border: 1px solid var(--dark); border-radius: 12px; padding: 11px; height: 110px; overflow-y: auto; font-family: monospace; font-size: 0.82rem; color: #7aa0a6; box-shadow: inset 0 0 10px #000; text-align: left; }
+        body.theme-light .terminal-log { background: #f8fafc; color: #334155; box-shadow: none; }
+        body.theme-amber .terminal-log { background: #0a0700; color: #b59a6a; }
+        .log-line { border-bottom: 1px dashed rgba(0, 36, 42, 0.2); padding: 2px 0; word-break: break-all; }
+        .log-line span { color: var(--cyan); }
+
+        .ripple { position: absolute; background: rgba(0, 243, 255, 0.35); border-radius: 50%; transform: scale(0); animation: rip 0.3s linear; pointer-events: none; }
+        @keyframes rip { to { transform: scale(4); opacity: 0; } }
+
+        /* ===== Панель инструкции ===== */
+        #help-panel { display: none; position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 50vw; flex-shrink: 0; flex-direction: column; background: var(--box); border-left: 2px solid var(--dark); z-index: 40; }
+        body.help-open #help-panel { display: flex; }
+        .help-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--dark); font-family: monospace; color: var(--cyan); font-size: 0.85rem; letter-spacing: 1px; }
+        .help-head button { padding: 6px 12px; font-size: 0.9rem; margin-left: 6px; }
+        #help-frame { flex: 1; width: 100%; border: 0; background: #020406; }
+        #help-resize { position: absolute; left: -6px; top: 0; bottom: 0; width: 12px; cursor: col-resize; z-index: 5; }
+        #help-resize:hover, body.resizing #help-resize { background: linear-gradient(90deg, transparent 5px, var(--cyan) 5px, var(--cyan) 7px, transparent 7px); }
+        body.resizing { user-select: none; cursor: col-resize; }
+        body.resizing #help-frame { pointer-events: none; }
+        @media (max-width: 1100px) {
+            #help-panel { position: fixed; inset: 0; width: 100% !important; height: 100%; border-left: 0; }
+            #help-resize { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- БЛОК ЗАЩИТЫ PRO-ВЕРСИИ С УНИКАЛЬНЫМ ID -->
+    <div id="activation-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2,4,6,0.96); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+        <h2 style="color: #ff5252; font-family: monospace; text-shadow: 0 0 10px #ff5252; margin: 0 0 5px 0;">🤖 SYSTEM LOCKED</h2>
+        <p style="color: #7aa0a6; font-family: monospace; font-size: 0.85rem; text-align: center; margin: 0 0 15px 0;">Для активации Pro-версии введите лицензионный ключ</p>
+        <p style="color: #00f3ff; font-family: monospace; font-size: 0.9rem; margin-bottom: 20px;">Ваш ID оборудования: <span id="device-id-display" style="font-weight: bold; background: #010204; padding: 4px 10px; border-radius: 4px; border: 1px dashed #00242a;">Генерация...</span></p>
+        <input type="text" id="activation-key" placeholder="ВВЕДИТЕ КЛЮЧ..." autocomplete="off" style="background: #010204; border: 1px solid #00242a; border-radius: 6px; color: #00f3ff; font-family: monospace; font-size: 1.1rem; padding: 10px; width: 280px; max-width: 80%; text-align: center; outline: none; box-shadow: inset 0 0 10px #000; margin-bottom: 15px;">
+        <button onclick="checkLicense()" style="background: linear-gradient(135deg, #00242a, #003b44); color: #fff; font-weight: bold; border: 1px solid #00f3ff; padding: 12px 25px; width: 280px; max-width: 84%; border-radius: 6px; cursor: pointer; box-shadow: 0 0 10px rgba(0,243,255,0.2);">АКТИВИРОВАТЬ ТЕРМИНАЛ</button>
+        <!-- Кнопка покупки ключа -->
+<button onclick="buyKey()" style="background: none; border: none; color: #ffaa00; font-family: monospace; font-size: 0.8rem; margin-top: 20px; cursor: pointer; border-bottom: 1px dashed #ffaa00; padding: 0;">
+    Купить ключ активации в Telegram
+</button>
+
+<!-- Скрипт для корректного открытия бота -->
+<script>
+function buyKey() {
+    const botUsername = 'QuantumCoreAuth_bot';
+    const deepLink = `https://t.me/${botUsername}`;
+
+    // 1. Копируем ID оборудования в буфер обмена
+    try {
+        const idText = document.getElementById('device-id-display').innerText;
+        navigator.clipboard.writeText(idText);
+    } catch (e) {}
+
+    // 2. Если открыто внутри Telegram (Mini App)
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+        Telegram.WebApp.openTelegramLink(deepLink);
+        Telegram.WebApp.close();
+    } else {
+        // 3. Если открыто на компьютере (в окне приложения или браузере)
+        window.location.href = `tg://resolve?domain=${botUsername}`;
+    }
+}
+</script>
+
+        <a href="#" onclick="openHelpWindow(); return false;" style="color: #4ade80; font-family: monospace; font-size: 0.8rem; margin-top: 12px; text-decoration: none; border-bottom: 1px dashed #4ade80;">📖 Что умеет терминал — инструкция</a>
+    </div>
+
+    <div class="workspace">
+        <div class="calculator">
+            <div class="display-container">
+                <div class="status-bar"><span>QUANTUM.CORE v4</span><span id="s-ind">SHIFT</span><span id="m-ind">MATRIX</span><span class="active">DEG</span></div>
+                <div class="history" id="history"></div>
+                <div class="current-input" id="display">0</div>
+            </div>
+            <div class="plotter-container"><canvas id="plotter" width="494" height="120"></canvas></div>
+            <div class="buttons-grid">
+                <button class="shift" id="b-sh" onclick="tSh()">SHIFT</button>
+                <button class="mtx" id="b-mt" onclick="tMtx()">MATRIX</button>
+                <button class="fn" id="f-sin" onclick="pFn('sin')">sin</button>
+                <button class="fn" id="f-cos" onclick="pFn('cos')">cos</button>
+                <button class="fn" id="f-tan" onclick="pFn('tan')">tan</button>
+                <button class="clear" onclick="clr()" title="Двойное нажатие: очистить лог">C</button>
+
+                <button class="fn" id="f-e1" onclick="pFn('sqrt')">√</button>
+                <button class="fn" id="f-e2" onclick="pFn('pow')">xʸ</button>
+                <button class="fn" id="f-e3" onclick="pFn('log')">log</button>
+                <button class="fn" id="f-e5" onclick="pFn('ln')">ln</button>
+                <button class="fn" id="f-const" onclick="pFn('const')">CONST</button>
+                <button class="operator" onclick="pOp('/')">/</button>
+
+                <button class="fn" onclick="pFn('pi')">π</button>
+                <button onclick="pNum('7')">7</button>
+                <button onclick="pNum('8')">8</button>
+                <button onclick="pNum('9')">9</button>
+                <button class="fn" onclick="pFn('avg')">AVG</button>
+                <button class="operator" onclick="pOp('*')">*</button>
+
+                <button class="fn" onclick="pFn('e')">e</button>
+                <button onclick="pNum('4')">4</button>
+                <button onclick="pNum('5')">5</button>
+                <button onclick="pNum('6')">6</button>
+                <button class="fn" onclick="pFn('std')">STD</button>
+                <button class="operator" onclick="pOp('-')">-</button>
+
+                <button class="fn" id="f-e4" onclick="pFn('fact')">n!</button>
+                <button onclick="pNum('1')">1</button>
+                <button onclick="pNum('2')">2</button>
+                <button onclick="pNum('3')">3</button>
+                <button class="fuel-btn" onclick="pFn('burn')">FUEL</button>
+                <button class="operator" onclick="pOp('+')">+</button>
+
+                <button class="fn" onclick="pFn('br')">( )</button>
+                <button onclick="pNum('0')">0</button>
+                <button onclick="pNum('.')">.</button>
+                <button onclick="pNum(';')">;</button>
+                <button class="fuel-btn" onclick="pFn('over')">OVER</button>
+                <button class="fn" onclick="pFn('plot')">PLOT</button>
+
+                <button class="theme-btn" onclick="nextTheme()">THEME</button>
+                <button class="help-btn" id="b-help" onclick="helpBtn()" title="Инструкция (F1). SHIFT + HELP — справка по кнопке">HELP</button>
+                <button onclick="pNum(',')">,</button>
+                <button class="clear" onclick="bksp()">⌫</button>
+                <button class="equals" onclick="calc()">=</button>
+            </div>
+            <div class="terminal-log" id="term-log"><div class="log-line">> Инициализация систем... OK</div></div>
+        </div>
+    </div>
+
+    <aside id="help-panel" aria-hidden="true">
+        <div id="help-resize" title="Потяните, чтобы изменить ширину"></div>
+        <div class="help-head">
+            <span>📖 ИНСТРУКЦИЯ</span>
+            <div>
+                <button onclick="openHelpWindow()" title="Открыть в отдельном окне">⧉</button>
+                <button onclick="saveHelp()" title="Сохранить инструкцию отдельным файлом">⬇</button>
+                <button onclick="closeHelp()" title="Закрыть (Esc)">✕</button>
+            </div>
+        </div>
+        <iframe id="help-frame" title="Инструкция Quantum Terminal" allow="fullscreen" allowfullscreen></iframe>
+    </aside>
+
+    <script>
+
+   // ===== ИНИЦИАЛИЗАЦИЯ TELEGRAM =====
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+        }
+
+        // ===== ЛИЦЕНЗИЯ + УВЕДОМЛЕНИЕ В TELEGRAM =====
+        function getDeviceID() {
+            var id = localStorage.getItem("quantum_device_id");
+            if (!id) {
+                id = Math.floor(100000 + Math.random() * 900000).toString();
+                localStorage.setItem("quantum_device_id", id);
+            }
+            return id;
+        }
+
+        function initLicense() {
+            var deviceDisplay = document.getElementById("device-id-display");
+            var activationScreen = document.getElementById("activation-screen");
+
+            if (deviceDisplay) {
+                deviceDisplay.innerText = getDeviceID();
+            }
+            
+            if (activationScreen && localStorage.getItem("quantum_activated") === "true") {
+                activationScreen.style.display = "none";
+            }
+        }
+
+        function checkLicense() {
+            var input = document.getElementById("activation-key");
+            var userKey = input.value.trim();
+            var currentDeviceID = getDeviceID();
+
+            if (!userKey) {
+                alert("Пожалуйста, введите лицензионный ключ!");
+                return;
+            }
+
+            fetch('https://quantum-bot-yrxv.onrender.com/validate', {
+             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: currentDeviceID, key: userKey })
+            })
+            .then(function(res) {
+                if (!res.ok) throw new Error("Server error");
+                return res.json();
+            })
+            .then(function(data) {
+                if (!data.activated) {
+                    alert("КЛЮЧ ОТКЛОНЕН СЕРВЕРОМ АВТОРИЗАЦИИ! ДОСТУП ЗАПРЕЩЕН.");
+                    input.value = "";
+                    return;
+                }
+
+                localStorage.setItem("quantum_activated", "true");
+                document.getElementById("activation-screen").style.display = "none";
+                
+                if (typeof logLine === "function") {
+                    logLine("Соединение с сервером авторизации... ", "OK");
+                    logLine("ЛИЦЕНЗИЯ ПОДТВЕРЖДЕНА. ДОСТУП ПРЕДОСТАВЛЕН... ", "OK");
+                }
+                if (typeof playSound === "function") playSound();
+            })
+            .catch(function(err) {
+                console.error('License check error:', err);
+                alert("Ошибка связи с сервером авторизации! Проверьте подключение к интернету.");
+            });
+        }
+
+        function openBuyLink() {
+               if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.openTelegramLink('https://t.me/QuantumCoreAuth_bot');
+            } else {
+            window.open('https://t.me/QuantumCoreAuth_bot', '_blank');
+           }
+        }
+
+        // ===== Состояние =====
+        var cur = '0', hist = '', rst = false, sh = false, mtx = false, tpl = false;
+        var cIdx = 0, prevConst = '', lastBtn = null, lastClr = 0, lastPlot = null, audioCtx = null;
+
+        var dEl = document.getElementById('display'), hEl = document.getElementById('history'),
+            sIn = document.getElementById('s-ind'), mIn = document.getElementById('m-ind'),
+            bSh = document.getElementById('b-sh'), bMt = document.getElementById('b-mt'),
+            tLog = document.getElementById('term-log'), canvas = document.getElementById('plotter'),
+            ctx = canvas.getContext('2d');
+
+        var consts = [{n:'c', v:'299792458'}, {n:'G', v:'6.6743e-11'}, {n:'h', v:'6.6261e-34'}, {n:'Na', v:'6.0221e23'}];
+        var themes = ['', 'theme-light', 'theme-amber'], themeNames = ['CYBERPUNK', 'LAB LIGHT', 'AMBER MATRIX'], tIdx = 0;
+        var DEG = Math.PI / 180;
+
+        // ===== Утилиты =====
+        function cssVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+        function isMsg(s) { return !/^[\d+\-*\/%().e,;]*$/.test(s); }
+        function fmt(x) { return (typeof x === 'number' && isFinite(x)) ? String(parseFloat(x.toPrecision(12))) : null; }
+        function snap(x) { return Math.abs(x) < 1e-12 ? 0 : x; }
+        function num(s) { s = s.trim(); return s === '' ? NaN : Number(s); }
+
+        function evalExpr(s) {
+            if (!/^[\d+\-*\/%().e]+$/.test(s)) return NaN;
+            s = s.replace(/[+\-*\/%]+$/, '');
+            var open = (s.match(/\(/g) || []).length - (s.match(/\)/g) || []).length;
+            if (open < 0) return NaN;
+            s += new Array(open + 1).join(')');
+            s = s.replace(/(^|[^\d.])0+(?=\d)/g, '$1');
+            if (s === '') return NaN;
+            try {
+                var r = Function('"use strict"; return (' + s + ');')();
+                return typeof r === 'number' ? r : NaN;
+            } catch (e) { return NaN; }
+        }
+
+        function fct(n) {
+            if (n < 0 || n !== Math.floor(n)) return NaN;
+            if (n > 170) return Infinity;
+            var r = 1; for (var i = 2; i <= n; i++) r *= i; return r;
+        }
+
+        function parseMtx(s) {
+            var rows = s.split(';');
+            if (rows.length !== 2) return null;
+            var r1 = rows[0].split(','), r2 = rows[1].split(',');
+            if (r1.length !== 2 || r2.length !== 2) return null;
+            return [r1[0], r1[1], r2[0], r2[1]].map(num);
+        }
+
+        // ===== Лог =====
+        function logLine(text, val) {
+            var div = document.createElement('div');
+            div.className = 'log-line';
+            div.appendChild(document.createTextNode('> ' + text));
+            if (val !== undefined) { var s = document.createElement('span'); s.textContent = val; div.appendChild(s); }
+            tLog.appendChild(div);
+            tLog.scrollTop = tLog.scrollHeight;
+        }
+        function addLog(e, r) { logLine(e + ' = ', r); }
+
+        // ===== Плоттер =====
+        function fitCanvas() { canvas.width = Math.round(canvas.clientWidth) || 494; canvas.height = Math.round(canvas.clientHeight) || 120; }
+
+        function initPlotter() {
+            var W = canvas.width, H = canvas.height, cx = Math.round(W / 2) + 0.5, cy = Math.round(H / 2) + 0.5;
+            ctx.clearRect(0, 0, W, H);
+            ctx.strokeStyle = cssVar('--dark'); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+        }
+
+        function drawGraph(type, val) {
+            lastPlot = { type: type, val: val };
+            initPlotter();
+            var W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2, S = 20, pen = false, prevY = 0;
+            ctx.strokeStyle = cssVar('--cyan'); ctx.lineWidth = 2; ctx.beginPath();
+            for (var px = 0; px <= W; px++) {
+                var x = (px - cx) / S, y;
+                if (type === 'sin') y = Math.sin(x);
+                else if (type === 'cos') y = Math.cos(x);
+                else if (type === 'tan') y = Math.tan(x);
+                else if (type === 'sqrt') y = x >= 0 ? Math.sqrt(x) : NaN;
+                else if (type === 'pow') y = x * x;
+                else y = val;
+                if (!isFinite(y)) { pen = false; continue; }
+                var py = Math.max(-10 * H, Math.min(10 * H, cy - y * S));
+                if (pen && Math.abs(py - prevY) > H) pen = false;
+                if (pen) ctx.lineTo(px, py); else { ctx.moveTo(px, py); pen = true; }
+                prevY = py;
+            }
+            ctx.stroke();
+        }
+
+        // ===== Интерфейс =====
+        function up() {
+            dEl.textContent = cur;
+            hEl.textContent = hist;
+            dEl.style.fontSize = cur.length > 28 ? '1.25rem' : cur.length > 18 ? '1.7rem' : '';
+            dEl.scrollLeft = dEl.scrollWidth;
+        }
+
+        function updLabels() {
+            var L = {
+                'f-sin': ['sin', 'asin', 'DET'], 'f-cos': ['cos', 'acos', 'TRANS'], 'f-tan': ['tan', 'atan', 'INV'],
+                'f-e1': ['√', 'x²'], 'f-e2': ['xʸ', '10ˣ'], 'f-e3': ['log', '×10ˣ'], 'f-e5': ['ln', 'eˣ'], 'f-e4': ['n!', 'mod'],
+                'b-help': ['HELP', 'HELP?']
+            };
+            for (var id in L) document.getElementById(id).textContent = (mtx && L[id][2]) ? L[id][2] : L[id][sh ? 1 : 0];
+        }
+
+        function nextTheme() {
+            document.body.classList.remove('theme-light', 'theme-amber');
+            tIdx = (tIdx + 1) % themes.length;
+            if (themes[tIdx]) document.body.classList.add(themes[tIdx]);
+            initPlotter();
+            if (lastPlot) drawGraph(lastPlot.type, lastPlot.val);
+            logLine('Интерфейс: ', themeNames[tIdx]);
+        }
+
+        function tSh() {
+            sh = !sh;
+            sIn.className = sh ? 'shift-active' : '';
+            bSh.classList.toggle('active-mode', sh);
+            updLabels();
+        }
+
+        function tMtx() {
+            mtx = !mtx;
+            mIn.className = mtx ? 'matrix-active' : '';
+            bMt.classList.toggle('active-mode', mtx);
+            updLabels();
+            if (mtx) {
+                var pm = parseMtx(cur);
+                if (pm && !pm.some(isNaN)) tpl = false;          // уже введённая матрица сохраняется
+                else { cur = '1,2;3,4'; tpl = true; }
+                hist = 'Матрица 2×2, формат: a,b;c,d';
+            } else { cur = '0'; tpl = false; hist = ''; }
+            rst = false; up();
+        }
+
+        // ===== Ввод =====
+        function pNum(n) {
+            if (n === '.') {
+                if (rst || tpl || isMsg(cur)) cur = '0.';
+                else {
+                    var seg = cur.split(/[+\-*\/%(),;]/).pop();
+                    if (seg.indexOf('.') !== -1) return;
+                    if (cur.slice(-1) === ')') cur += '*0.';
+                    else cur += seg === '' ? '0.' : '.';
+                }
+            } else if (n === ',' || n === ';') {
+                if (tpl || isMsg(cur)) cur = '0' + n;
+                else { if (/[,;+\-*\/%(]$/.test(cur)) return; cur += n; }
+            } else {
+                if (rst || tpl || isMsg(cur)) cur = n;
+                else if (/(^|[+\-*\/%(,;])0$/.test(cur)) cur = cur.slice(0, -1) + n;
+                else { if (cur.slice(-1) === ')') cur += '*'; cur += n; }
+            }
+            rst = false; tpl = false; up();
+        }
+
+        function pOp(o) {
+            if (isMsg(cur) || tpl) cur = '0';
+            rst = false; tpl = false;
+            if (cur === '-') return;
+            if (cur === '0' && o === '-') { cur = '-'; up(); return; }
+            if (o === '-' && /[*\/%(,;]$/.test(cur)) { cur += o; up(); return; }
+            if (/[(,;]$/.test(cur)) return;
+            cur = cur.replace(/[+\-*\/%]+$/, '') + o;
+            if (cur === o) cur = '0' + o;
+            up();
+        }
+
+        function pBr(ch) {
+            if (isMsg(cur) || tpl) cur = '0';
+            var open = cur.split('(').length - cur.split(')').length;
+            if (!ch) ch = (open > 0 && /[\d.)]$/.test(cur)) ? ')' : '(';
+            if (ch === ')') {
+                if (open <= 0 || /[+\-*\/%(,;]$/.test(cur)) return;
+                cur += ')';
+            } else {
+                if (cur === '0' || rst) cur = '(';
+                else if (/[\d.)]$/.test(cur)) cur += '*(';
+                else cur += '(';
+            }
+            rst = false; tpl = false; up();
+        }
+
+        function appendOp(op) {
+            if (isMsg(cur) || tpl || /[(,;]$/.test(cur)) return;
+            rst = false;
+            cur = cur.replace(/[+\-*\/%]+$/, '') || '0';
+            if (op === '**') cur = cur.replace(/(^|[+\-*\/%(])-(\d+\.?\d*(?:e[+-]?\d+)?)$/, '$1(-$2)');
+            cur += op; up();
+        }
+
+        function insertVal(val) {
+            if (rst || tpl || isMsg(cur) || cur === '0') cur = val;
+            else if (/[+\-*\/%(,;]$/.test(cur)) cur += val;
+            else cur += '*' + val;
+            rst = false; tpl = false;
+        }
+
+        function bksp() {
+            if (rst || tpl || isMsg(cur)) { cur = '0'; hist = ''; }
+            else { cur = cur.slice(0, -1); if (cur === '' || cur === '-') cur = '0'; }
+            rst = false; tpl = false; up();
+        }
+
+        // ===== Функции =====
+        function pFn(t) {
+            if (t === 'plot') {
+                var pv = evalExpr(cur);
+                if (isNaN(pv)) { hist = 'PLOT: нужно числовое значение'; up(); return; }
+                drawGraph('num', pv); hist = 'График Y=' + fmt(pv); up(); return;
+            }
+
+            if (mtx && (t === 'sin' || t === 'cos' || t === 'tan')) {
+                var m = parseMtx(cur), src0 = cur, res, name;
+                if (!m || m.some(isNaN)) { cur = 'MATRIX ERROR'; hist = 'Формат: a,b;c,d'; rst = true; tpl = false; up(); return; }
+                var det = m[0] * m[3] - m[1] * m[2];
+                if (t === 'sin') { name = 'det'; res = fmt(det); }
+                else if (t === 'cos') { name = 'trans'; res = [m[0], m[2]].map(fmt).join(',') + ';' + [m[1], m[3]].map(fmt).join(','); }
+                else {
+                    name = 'inv';
+                    res = Math.abs(det) < 1e-12 ? 'NO INVERSE'
+                        : [m[3] / det, -m[1] / det].map(fmt).join(',') + ';' + [-m[2] / det, m[0] / det].map(fmt).join(',');
+                }
+                hist = name + '([' + src0 + '])'; cur = res; addLog(hist, res);
+                rst = true; tpl = false; up(); return;
+            }
+
+            if (t === 'const') {
+                if (lastBtn && lastBtn.id === 'f-const' && prevConst && cur.slice(-prevConst.length) === prevConst) {
+                    cur = cur.slice(0, -prevConst.length) || '0';
+                }
+                var c = consts[cIdx];
+                insertVal(c.v); prevConst = c.v; hist = 'Const ' + c.n;
+                cIdx = (cIdx + 1) % consts.length; up(); return;
+            }
+            if (t === 'pi') { insertVal(fmt(Math.PI)); up(); return; }
+            if (t === 'e')  { insertVal(fmt(Math.E));  up(); return; }
+            if (t === 'br') { pBr(); return; }
+
+            if (t === 'burn' || t === 'over') {
+                var arr = cur.split(',');
+                if (arr.length !== 2) {
+                    cur = t === 'burn' ? 'Ввод: литры,км' : 'Ввод: Факт,Норма';
+                    hist = t === 'burn' ? 'Пример: 45,150' : 'Пример: 38,32';
+                    rst = true; tpl = false; up(); return;
+                }
+                var a = num(arr[0]), b = num(arr[1]);
+                if (isNaN(a) || isNaN(b) || a < 0 || b <= 0) { cur = 'ERROR'; rst = true; tpl = false; up(); return; }
+                if (t === 'burn') {
+                    cur = (a / b * 100).toFixed(2) + ' л/100км'; hist = 'Расход топлива:';
+                    addLog('Fuel (' + a + ' л / ' + b + ' км)', cur);
+                } else {
+                    var diff = a - b, pct = diff / b * 100;
+                    cur = (diff > 0 ? '+' : '') + diff.toFixed(1) + ' л (' + (pct > 0 ? '+' : '') + pct.toFixed(1) + '%)';
+                    hist = 'Пережог:'; addLog('Excess (' + a + ' vs ' + b + ')', cur);
+                }
+                rst = true; tpl = false; up(); return;
+            }
+
+            if (t === 'avg' || t === 'std') {
+                var srcS = cur, nums = cur.split(',').map(num);
+                if (nums.some(isNaN)) { cur = 'DATA ERROR'; hist = 'Формат: 1,2,3'; rst = true; tpl = false; up(); return; }
+                var mean = nums.reduce(function (p, q) { return p + q; }, 0) / nums.length;
+                if (t === 'avg') cur = fmt(mean);
+                else cur = fmt(Math.sqrt(nums.reduce(function (p, q) { return p + Math.pow(q - mean, 2); }, 0) / nums.length));
+                hist = t + '([' + srcS + '])'; addLog(hist, cur);
+                rst = true; tpl = false; up(); return;
+            }
+
+            if (!sh && t === 'pow')  { appendOp('**'); return; }
+            if (sh && t === 'log')   { tSh(); appendOp('*10**'); return; }
+            if (sh && t === 'fact')  { tSh(); appendOp('%'); return; }
+
+            if (isMsg(cur) || tpl) return;
+            var v = evalExpr(cur), src = cur, r = NaN, fName = t, plot = null;
+            if (isNaN(v)) { hist = cur; cur = 'ERROR'; rst = true; up(); return; }
+
+            if (!sh) {
+                if (t === 'sin') { r = snap(Math.sin(v * DEG)); plot = 'sin'; }
+                else if (t === 'cos') { r = snap(Math.cos(v * DEG)); plot = 'cos'; }
+                else if (t === 'tan') { r = snap(Math.cos(v * DEG)) === 0 ? NaN : snap(Math.tan(v * DEG)); plot = 'tan'; }
+                else if (t === 'sqrt') { r = Math.sqrt(v); plot = 'sqrt'; }
+                else if (t === 'log') r = Math.log10(v);
+                else if (t === 'ln') r = Math.log(v);
+                else if (t === 'fact') r = fct(v);
+            } else {
+                tSh();
+                if (t === 'sin') { fName = 'asin'; r = Math.asin(v) / DEG; }
+                else if (t === 'cos') { fName = 'acos'; r = Math.acos(v) / DEG; }
+                else if (t === 'tan') { fName = 'atan'; r = Math.atan(v) / DEG; }
+                else if (t === 'sqrt') { fName = 'sqr'; r = v * v; plot = 'pow'; }
+                else if (t === 'pow') { fName = '10^x'; r = Math.pow(10, v); }
+                else if (t === 'ln') { fName = 'exp'; r = Math.exp(v); }
+            }
+
+            var out = fmt(r);
+            hist = fName + '(' + src + ')';
+            if (out === null) { cur = 'ERROR'; addLog(hist, 'ERROR'); }
+            else { cur = out; addLog(hist, out); if (plot) drawGraph(plot); }
+            rst = true; up();
+        }
+
+        // ===== Очистка и вычисление =====
+        function clr() {
+            var now = Date.now();
+            if (now - lastClr < 500) {
+                tLog.innerHTML = '';
+                logLine('Лог очищен. Рестарт... ', 'OK');
+                lastPlot = null; initPlotter();
+            }
+            lastClr = now;
+            if (mtx) tMtx();
+            if (sh) tSh();
+            cur = '0'; hist = ''; rst = false; tpl = false; up();
+        }
+
+        function calc() {
+            if (isMsg(cur)) return;
+            if (/[,;]/.test(cur)) {
+                hist = mtx ? 'Матрица: используйте DET / TRANS / INV' : 'Запятая: только для AVG / STD / FUEL / OVER';
+                up(); return;
+            }
+            var r = fmt(evalExpr(cur));
+            hist = cur + ' =';
+            if (r === null) { addLog(cur, 'ERROR'); cur = 'ERROR'; }
+            else { addLog(cur, r); cur = r; }
+            rst = true; tpl = false; up();
+        }
+
+        // ===== Звук =====
+        function playSound() {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                var osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.04);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.04);
+            } catch (e) {}
+        }
+
+        // ===== HELP: встроенная инструкция =====
+        var helpOpen = false, helpReady = false, helpPending = null, helpWin = null, helpPick = false, helpHtml = null;
+        var hPanel = document.getElementById('help-panel'), hFrame = document.getElementById('help-frame'), bHelp = document.getElementById('b-help');
+
+        function getHelpHtml() {
+            if (!helpHtml) helpHtml = document.getElementById('help-doc').textContent.replace(/<\\\/script>/g, '<\/script>');
+            return helpHtml;
+        }
+        function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+        function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+        function helpDefaultW() { var W = window.innerWidth; return Math.round(Math.max(420, Math.min(W - 620, W * 0.55))); }
+        function setHelpW(w) {
+            var W = window.innerWidth;
+            w = Math.max(360, Math.min(W - 320, w));
+            hPanel.style.width = w + 'px';
+            return w;
+        }
+        function helpWinAlive() { return !!(helpWin && !helpWin.closed); }
+        function sendHelp(win, q) { try { win.postMessage({ type: 'quantum-help-search', q: q }, '*'); } catch (e) {} }
+
+        function openHelp(q) {
+            if (helpWinAlive()) { helpWin.focus(); if (q) sendHelp(helpWin, q); return; }
+            if (!hFrame.getAttribute('srcdoc')) { helpReady = false; hFrame.srcdoc = getHelpHtml(); }
+            setHelpW(parseInt(lsGet('quantum_help_w'), 10) || helpDefaultW());
+            helpOpen = true;
+            document.body.classList.add('help-open');
+            hPanel.setAttribute('aria-hidden', 'false');
+            bHelp.classList.add('active-mode');
+            if (q) { if (helpReady) sendHelp(hFrame.contentWindow, q); else helpPending = q; }
+        }
+
+        function closeHelp() {
+            helpOpen = false;
+            document.body.classList.remove('help-open');
+            hPanel.setAttribute('aria-hidden', 'true');
+            if (!helpWinAlive()) bHelp.classList.remove('active-mode');
+        }
+
+        hFrame.addEventListener('load', function () {
+            if (!hFrame.getAttribute('srcdoc')) return;
+            helpReady = true;
+            if (helpPending) { sendHelp(hFrame.contentWindow, helpPending); helpPending = null; }
+        });
+
+        function openHelpWindow(q) {
+            if (helpWinAlive()) { helpWin.focus(); if (q) sendHelp(helpWin, q); return; }
+            var w = window.open('', 'quantum_help', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+            if (!w) {
+                if (isLocked()) { alert('Браузер заблокировал всплывающее окно. Разрешите всплывающие окна для этого файла.'); return; }
+                logLine('Всплывающее окно заблокировано. Инструкция открыта ', 'сбоку');
+                openHelp(q); return;
+            }
+            w.document.open(); w.document.write(getHelpHtml()); w.document.close();
+            helpWin = w;
+            closeHelp();
+            bHelp.classList.add('active-mode');
+            if (q) setTimeout(function () { sendHelp(w, q); }, 300);
+            var watch = setInterval(function () { if (!helpWinAlive()) { clearInterval(watch); if (!helpOpen) bHelp.classList.remove('active-mode'); } }, 1000);
+        }
+
+        function saveHelp() {
+            var blob = new Blob([getHelpHtml()], { type: 'text/html;charset=utf-8' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'Quantum_Terminal_Инструкция.html';
+            document.body.appendChild(a); a.click();
+            setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            logLine('Инструкция сохранена: ', a.download);
+        }
+
+        // Кнопка HELP: обычное нажатие открывает/закрывает, SHIFT + HELP включает справку по кнопке
+        function helpBtn() {
+            if (helpPick) { stopPick(); return; }
+            if (sh) { tSh(); startPick(); return; }
+            if (helpWinAlive()) { helpWin.focus(); return; }
+            if (helpOpen) closeHelp(); else openHelp();
+        }
+        function startPick() { helpPick = true; document.body.classList.add('help-pick'); hist = 'СПРАВКА: нажмите кнопку (Esc — отмена)'; up(); }
+        function stopPick() { helpPick = false; document.body.classList.remove('help-pick'); hist = ''; up(); }
+
+        function topicFor(b) {
+            var oc = b.getAttribute('onclick') || '', m = oc.match(/pFn\('(\w+)'\)/);
+            var map = { burn: 'FUEL', over: 'OVER', avg: 'AVG', std: 'STD', 'const': 'CONST', pi: 'CONST', e: 'CONST', plot: 'PLOT',
+                        br: 'Умная скобка', sqrt: '√', pow: 'xʸ', log: 'log', ln: 'ln', fact: 'n!', sin: 'sin', cos: 'cos', tan: 'tan' };
+            if (m) return (mtx && /^(sin|cos|tan)$/.test(m[1])) ? 'MATRIX' : (map[m[1]] || 'шпаргалка');
+            if (/tSh/.test(oc)) return 'SHIFT';
+            if (/tMtx/.test(oc) || /pNum\(';'\)/.test(oc)) return 'MATRIX';
+            if (/clr/.test(oc)) return 'Двойное нажатие';
+            if (/bksp/.test(oc)) return '⌫';
+            if (/nextTheme/.test(oc)) return 'THEME';
+            if (/pNum\(','\)/.test(oc)) return 'через запятую';
+            if (/calc|pOp/.test(oc)) return 'приоритет операций';
+            return 'интерфейс';
+        }
+
+        // Перехват клика в режиме справки (до выполнения функции кнопки)
+        document.addEventListener('click', function (e) {
+            if (!helpPick) return;
+            var b = e.target.closest && e.target.closest('.buttons-grid button');
+            if (!b) return;
+            e.stopPropagation(); e.preventDefault();
+            if (b.id === 'b-help') { stopPick(); return; }
+            var topic = topicFor(b);
+            helpPick = false; document.body.classList.remove('help-pick');
+            hist = 'Справка: ' + b.textContent; up();
+            openHelp(topic);
+        }, true);
+
+        // Пример из инструкции → калькулятор
+        function insertExample(v) {
+            if (isLocked()) return;
+            v = String(v).replace(/−/g, '-').replace(/\s+/g, '');
+            if (!/^[\d+\-*\/%().,;]{1,80}$/.test(v)) return;
+            v = v.replace(/([\d.)])\(/g, '$1*(');
+            if (sh) tSh();
+            if (/;/.test(v) && !mtx) tMtx();
+            if (/^[*\/+%]/.test(v)) {
+                if (isMsg(cur) || tpl || /[,;]/.test(cur)) return;
+                cur = cur.replace(/[+\-*\/%]+$/, '') + v;
+            } else cur = v;
+            rst = false; tpl = false; hist = 'Пример из инструкции'; up();
+            logLine('Из инструкции: ', v);
+            dEl.classList.remove('flash'); void dEl.offsetWidth; dEl.classList.add('flash');
+        }
+
+        window.addEventListener('message', function (e) {
+            var d = e.data;
+            if (!d || typeof d !== 'object') return;
+            var fromPanel = hFrame.contentWindow && e.source === hFrame.contentWindow;
+            var fromWin = helpWin && e.source === helpWin;
+            if (!fromPanel && !fromWin) return;
+            if (d.type === 'quantum-insert') insertExample(d.value);
+            else if (d.type === 'quantum-help-close') { if (fromPanel) closeHelp(); else helpWin.close(); }
+        });
+
+        // Изменение ширины панели
+        (function () {
+            var h = document.getElementById('help-resize'), drag = false;
+            h.addEventListener('pointerdown', function (e) { drag = true; h.setPointerCapture(e.pointerId); document.body.classList.add('resizing'); e.preventDefault(); });
+            h.addEventListener('pointermove', function (e) { if (drag) setHelpW(window.innerWidth - e.clientX); });
+            function end() {
+                if (!drag) return;
+                drag = false; document.body.classList.remove('resizing');
+                lsSet('quantum_help_w', parseInt(hPanel.style.width, 10));
+                fitAll();
+            }
+            h.addEventListener('pointerup', end);
+            h.addEventListener('pointercancel', end);
+        })();
+
+        // ===== Анимация кликов =====
+        document.querySelectorAll('button').forEach(function (b) {
+            b.addEventListener('click', function (e) {
+                playSound();
+                var c = document.createElement('span');
+                c.classList.add('ripple');
+                this.appendChild(c);
+                var d = Math.max(this.clientWidth, this.clientHeight);
+                c.style.width = c.style.height = d + 'px';
+                var r = this.getBoundingClientRect();
+                c.style.left = e.clientX - r.left - d / 2 + 'px';
+                c.style.top = e.clientY - r.top - d / 2 + 'px';
+                setTimeout(function () { c.remove(); }, 300);
+                lastBtn = this;
+            });
+        });
+
+        // ===== Клавиатура =====
+        document.addEventListener('keydown', function (e) {
+            var tg = e.target, tn = tg && tg.tagName;
+            if (tn === 'INPUT' || tn === 'TEXTAREA' || tn === 'SELECT' || (tg && tg.isContentEditable)) return;   // поле ключа и др.
+            if (isLocked()) return;
+            var k = e.key;
+            if (k === 'F1' || k === '?') { e.preventDefault(); helpBtn(); return; }
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            lastBtn = null;
+            if (k === 'Escape') { e.preventDefault(); if (helpPick) stopPick(); else if (helpOpen) closeHelp(); else clr(); return; }
+            if (/^[0-9.,;]$/.test(k)) pNum(k);
+            else if ('+-*/%'.indexOf(k) !== -1) pOp(k);
+            else if (k === '(' || k === ')') pBr(k);
+            else if (k === '^') appendOp('**');
+            else if (k === 'Enter' || k === '=') calc();
+            else if (k === 'Backspace') bksp();
+            else if (k === 'Delete') clr();
+            else return;
+            e.preventDefault();
+        });
+
+        // ===== Инициализация =====
+        function fitAll() {
+            fitCanvas(); initPlotter();
+            if (lastPlot) drawGraph(lastPlot.type, lastPlot.val);
+            if (helpOpen && window.innerWidth > 1100) setHelpW(parseInt(hPanel.style.width, 10) || helpDefaultW());
+        }
+        window.addEventListener('resize', fitAll);
+        fitCanvas();
+        initPlotter();
+        up();
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLicense);
+} else {
+    initLicense();
+}
+
+    </script>
+
+<!-- ===================== ВСТРОЕННАЯ ИНСТРУКЦИЯ ===================== -->
+<script type="text/plain" id="help-doc">
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quantum Terminal v4 — инструкция</title>
+<style>
+    :root {
+        --bg: #020406; --box: #060b0f; --cyan: #00f3ff; --dim: #00a8b5; --dark: #00242a;
+        --text: #c8f3f7; --muted: #7aa0a6; --amber: #ffaa00; --red: #ff5252; --green: #22c55e;
+        --blue: #8ab4f8; --pink: #ff5588; --violet: #a78bfa;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: 'Segoe UI', Roboto, Arial, sans-serif; overflow: hidden; }
+
+    /* ===== Верхняя панель с поиском ===== */
+    #top { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #01070a; border-bottom: 1px solid var(--dark); display: flex; align-items: center; gap: 12px; padding: 0 14px; z-index: 20; font-family: monospace; }
+    #top .brand { color: var(--cyan); font-size: 13px; letter-spacing: 1px; white-space: nowrap; }
+    #sbox { position: relative; flex: 1; max-width: 640px; margin: 0 auto; }
+    #sbox::before { content: '🔍'; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 13px; opacity: .7; pointer-events: none; }
+    #q { width: 100%; background: #0c1218; border: 1px solid var(--dark); border-radius: 10px; color: #fff; font-family: monospace; font-size: 14px; padding: 9px 12px 9px 34px; outline: none; }
+    #q:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(0,243,255,.25); }
+    #results { display: none; position: absolute; top: 44px; left: 0; right: 0; max-height: min(72vh, 560px); overflow-y: auto; background: #050a0e; border: 1px solid var(--dim); border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.7); padding: 8px; }
+    #results.open { display: block; }
+    .r-h { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; padding: 6px 8px 4px; }
+    .r-tip { font-size: 12px; color: var(--amber); padding: 2px 8px 8px; }
+    .r-item { padding: 8px 10px; border-radius: 8px; cursor: pointer; font-family: 'Segoe UI', sans-serif; }
+    .r-item b { display: block; color: #fff; font-size: 14px; font-weight: 600; }
+    .r-item small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 3px; line-height: 1.4; }
+    .r-item.sel, .r-item:hover { background: rgba(0,243,255,.09); }
+    .r-empty { padding: 16px; text-align: center; color: var(--muted); font-size: 14px; font-family: 'Segoe UI', sans-serif; }
+    .r-empty span { font-size: 12px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 6px 8px; }
+    .chip { background: #0c1218; border: 1px solid var(--dark); color: var(--text); border-radius: 14px; padding: 5px 11px; font-size: 12.5px; cursor: pointer; font-family: monospace; }
+    .chip:hover { border-color: var(--amber); color: var(--amber); }
+    mark { background: rgba(255,170,0,.35); color: #fff; border-radius: 3px; padding: 0 1px; }
+    mark.hl { box-shadow: 0 0 0 2px rgba(255,170,0,.4); animation: pulse 1.2s ease-out 2; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(255,170,0,.15); } }
+
+    /* ===== Сцена ===== */
+    #viewport { position: fixed; top: 52px; left: 0; right: 0; bottom: 56px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #deck { width: 1280px; height: 720px; flex-shrink: 0; position: relative; transform-origin: center center; }
+    .slide {
+        position: absolute; inset: 0; padding: 40px 60px 64px; display: flex; flex-direction: column;
+        background: radial-gradient(ellipse at top right, rgba(0,243,255,0.07), transparent 55%), radial-gradient(ellipse at bottom left, rgba(255,170,0,0.05), transparent 50%), var(--box);
+        border: 2px solid var(--dark); border-radius: 22px; box-shadow: 0 0 50px rgba(0,243,255,0.12);
+        opacity: 0; visibility: hidden; transform: translateX(40px); transition: opacity .35s, transform .35s, visibility .35s; overflow: hidden;
+    }
+    .slide.active { opacity: 1; visibility: visible; transform: none; }
+    .slide.prev { transform: translateX(-40px); }
+
+    .kicker { font-family: monospace; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); margin-bottom: 6px; }
+    .kicker.fuel { color: var(--amber); }
+    h1 { font-size: 52px; margin: 0 0 12px; color: #fff; line-height: 1.1; }
+    h2 { font-size: 34px; margin: 0 0 18px; color: #fff; }
+    h2 .accent, h1 .accent { color: var(--cyan); text-shadow: 0 0 12px rgba(0,243,255,0.5); }
+    h2 .fuel, h1 .fuel { color: var(--amber); text-shadow: 0 0 12px rgba(255,170,0,0.45); }
+    h3 { font-size: 20px; margin: 0 0 10px; color: var(--cyan); }
+    p { font-size: 18px; line-height: 1.5; margin: 0 0 12px; }
+    .muted { color: var(--muted); }
+    code { font-family: Consolas, 'Courier New', monospace; background: rgba(0,243,255,0.08); border: 1px solid rgba(0,243,255,0.15); padding: 1px 6px; border-radius: 4px; color: var(--cyan); font-size: 0.92em; white-space: nowrap; }
+    code.try { cursor: pointer; transition: background .15s; }
+    code.try::after { content: ' ▸'; color: var(--amber); font-size: .85em; }
+    code.try:hover { background: rgba(255,170,0,.16); border-color: var(--amber); color: #fff; }
+    code.sent { background: rgba(34,197,94,.35) !important; border-color: var(--green) !important; }
+    kbd { display: inline-block; font-family: monospace; font-size: 0.85em; font-weight: bold; padding: 2px 8px; border-radius: 5px; background: #0c1218; border: 1px solid var(--dim); border-bottom-width: 3px; color: #fff; white-space: nowrap; }
+    kbd.f { border-color: var(--amber); color: var(--amber); background: #1a1100; }
+    kbd.m { border-color: var(--pink); color: var(--pink); background: #16060c; }
+    kbd.h { border-color: var(--green); color: #4ade80; background: #04140b; }
+
+    .footer { position: absolute; left: 60px; right: 60px; bottom: 20px; display: flex; justify-content: space-between; font-family: monospace; font-size: 13px; color: var(--muted); border-top: 1px dashed var(--dark); padding-top: 8px; }
+
+    .row { display: flex; gap: 28px; flex: 1; min-height: 0; }
+    .col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+    .col.w2 { flex: 2; }
+
+    table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 16px; border: 1px solid var(--dark); border-radius: 10px; overflow: hidden; }
+    th { background: #00242a; color: var(--cyan); text-align: left; padding: 9px 12px; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: .5px; }
+    td { padding: 8px 12px; border-top: 1px solid rgba(0,168,181,0.15); vertical-align: top; }
+    tr:nth-child(even) td { background: rgba(0,243,255,0.025); }
+    td.r, th.r { text-align: right; }
+    tr.total td { background: rgba(255,170,0,0.08) !important; font-weight: bold; color: #fff; border-top: 2px solid var(--amber); }
+    table.sm { font-size: 14.5px; }
+    table.sm td { padding: 6px 10px; }
+    table.sm th { padding: 7px 10px; font-size: 12.5px; }
+
+    .note { border-left: 4px solid var(--cyan); background: rgba(0,243,255,0.06); padding: 12px 16px; border-radius: 0 10px 10px 0; font-size: 16px; line-height: 1.45; }
+    .note.warn { border-color: var(--amber); background: rgba(255,170,0,0.07); }
+    .note.ok { border-color: var(--green); background: rgba(34,197,94,0.07); }
+    .note.big { font-size: 20px; padding: 16px 20px; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; white-space: nowrap; }
+    .b-red { background: rgba(255,82,82,0.15); color: #ff7b7b; border: 1px solid rgba(255,82,82,0.4); }
+    .b-amb { background: rgba(255,170,0,0.13); color: var(--amber); border: 1px solid rgba(255,170,0,0.4); }
+    .b-grn { background: rgba(34,197,94,0.13); color: #4ade80; border: 1px solid rgba(34,197,94,0.4); }
+    .b-gry { background: rgba(200,243,247,0.08); color: #c8f3f7; border: 1px solid rgba(200,243,247,0.25); }
+    .b-blu { background: rgba(138,180,248,0.12); color: var(--blue); border: 1px solid rgba(138,180,248,0.4); }
+    .res { color: var(--cyan); font-weight: bold; font-family: Consolas, monospace; }
+    .res.f { color: var(--amber); }
+
+    .cards { display: grid; gap: 14px; }
+    .card { background: rgba(0,0,0,0.35); border: 1px solid var(--dark); border-radius: 14px; padding: 14px 16px; }
+    .card .lbl { font-size: 12px; font-family: monospace; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .card .val { font-size: 19px; color: #fff; font-weight: 600; }
+    .card.fuel { border-color: rgba(255,170,0,0.35); background: rgba(255,170,0,0.05); }
+
+    .formula { font-family: 'Cambria Math', 'Times New Roman', serif; font-size: 30px; color: #fff; background: rgba(255,170,0,0.06); border: 1px solid rgba(255,170,0,0.3); border-radius: 14px; padding: 14px 22px; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+    .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; font-size: 24px; }
+    .frac > span:first-child { border-bottom: 2px solid var(--amber); padding: 0 8px 2px; }
+    .frac > span:last-child { padding: 2px 8px 0; }
+
+    .title-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .title-wrap .sub { font-size: 24px; color: var(--muted); margin-bottom: 30px; }
+    .logo { font-family: monospace; font-size: 16px; color: var(--cyan); border: 1px solid var(--cyan); display: inline-block; padding: 4px 12px; border-radius: 6px; margin-bottom: 22px; text-shadow: 0 0 6px var(--cyan); box-shadow: 0 0 12px rgba(0,243,255,0.25); width: fit-content; }
+
+    .mock { width: 430px; margin-left: 34px; background: var(--box); border: 2px solid var(--dark); border-radius: 18px; padding: 14px; box-shadow: 0 0 30px rgba(0,243,255,0.15); font-family: monospace; }
+    .zone { position: relative; }
+    .zone .mk { position: absolute; left: -46px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; background: var(--cyan); color: #000; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px var(--cyan); font-family: 'Segoe UI', sans-serif; }
+    .m-disp { background: #010203; border: 1px solid var(--dark); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+    .m-stat { display: flex; justify-content: space-between; font-size: 10px; color: var(--dim); border-bottom: 1px dashed var(--dark); padding-bottom: 3px; margin-bottom: 4px; }
+    .m-stat b { color: var(--cyan); }
+    .m-hist { text-align: right; color: var(--dim); font-size: 11px; margin-bottom: 2px; }
+    .m-cur { text-align: right; color: var(--cyan); font-size: 21px; font-weight: bold; text-shadow: 0 0 8px rgba(0,243,255,0.5); }
+    .m-plot { height: 34px; background: #020508; border: 1px solid var(--dark); border-radius: 8px; margin-bottom: 8px; position: relative; overflow: visible; }
+    .m-plot::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid var(--dark); }
+    .m-plot::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid var(--dark); }
+    .m-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .m-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 8px; }
+    .m-grid span { background: #0c1218; border: 1px solid rgba(0,243,255,0.08); border-radius: 4px; text-align: center; font-size: 10.5px; padding: 6px 0; color: var(--text); }
+    .m-grid .op { color: var(--cyan); font-weight: bold; }
+    .m-grid .fn { color: var(--blue); background: #080e14; }
+    .m-grid .mx { color: var(--pink); background: #16060c; }
+    .m-grid .sh { background: #1c1200; }
+    .m-grid .fu { color: var(--amber); background: #1a1100; border-color: var(--amber); box-shadow: 0 0 8px rgba(255,170,0,0.45); font-weight: bold; }
+    .m-grid .cl { color: var(--red); background: #140808; }
+    .m-grid .th { color: var(--violet); background: #1e1b4b; }
+    .m-grid .hp { color: #4ade80; background: #04140b; border-color: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.4); font-weight: bold; }
+    .m-grid .eq { grid-column: span 2; background: linear-gradient(135deg, #00242a, #003b44); color: #fff; border-color: var(--cyan); }
+    .m-log { background: #010204; border: 1px solid var(--dark); border-radius: 8px; padding: 6px 8px; font-size: 10.5px; color: var(--muted); }
+    .m-log b { color: var(--cyan); font-weight: normal; }
+    .zones-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 11px; }
+    .zones-list li { display: flex; gap: 14px; align-items: flex-start; font-size: 16.5px; line-height: 1.4; }
+    .zones-list .n { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--cyan); color: #000; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    .zones-list .n.g { background: var(--green); }
+    .zones-list b { color: #fff; }
+
+    .map { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; flex: 1; }
+    .map .card { display: flex; flex-direction: column; }
+    .map .ico { font-size: 34px; margin-bottom: 6px; }
+    .map h3 { font-size: 18px; }
+    .map .item { font-size: 14.5px; padding: 6px 8px; margin-top: 6px; border-radius: 6px; background: rgba(0,243,255,0.05); border: 1px solid rgba(0,243,255,0.1); }
+    .map .item b { color: #fff; font-family: monospace; }
+    .map .card.fuel .item { background: rgba(255,170,0,0.07); border-color: rgba(255,170,0,0.25); }
+    .map .card.fuel h3 { color: var(--amber); }
+    .center-node { text-align: center; margin-bottom: 14px; }
+    .center-node span { display: inline-block; padding: 8px 24px; border: 2px solid var(--cyan); border-radius: 30px; font-family: monospace; color: var(--cyan); font-size: 18px; box-shadow: 0 0 14px rgba(0,243,255,0.3); }
+
+    .flow { display: flex; flex-direction: column; align-items: stretch; }
+    .step { border: 1px solid var(--dark); background: rgba(0,0,0,0.35); border-radius: 10px; padding: 8px 14px; font-size: 15px; display: flex; gap: 12px; align-items: center; }
+    .step .i { font-size: 22px; }
+    .step b { color: #fff; }
+    .step.fuel { border-color: rgba(255,170,0,0.45); background: rgba(255,170,0,0.06); }
+    .arrow { text-align: center; color: var(--dim); font-size: 16px; line-height: 18px; height: 18px; }
+    .split { display: flex; gap: 10px; }
+    .split .step { flex: 1; }
+    .step.good { border-color: rgba(34,197,94,0.5); background: rgba(34,197,94,0.06); }
+    .step.bad { border-color: rgba(255,82,82,0.5); background: rgba(255,82,82,0.06); }
+
+    .corridor { position: relative; height: 110px; margin: 10px 20px 0; }
+    .corridor .axis { position: absolute; left: 0; right: 0; top: 52px; border-top: 2px solid var(--dim); }
+    .corridor .band { position: absolute; top: 34px; height: 36px; background: rgba(34,197,94,0.12); border: 1px dashed rgba(34,197,94,0.6); border-radius: 6px; }
+    .corridor .mean { position: absolute; top: 24px; height: 56px; border-left: 2px dashed var(--cyan); }
+    .corridor .pt { position: absolute; top: 44px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+    .corridor .pt.hi { background: var(--red); box-shadow: 0 0 10px var(--red); }
+    .corridor .pt.lo { background: var(--blue); box-shadow: 0 0 10px var(--blue); }
+    .corridor .pl { position: absolute; top: 4px; transform: translateX(-50%); font-size: 12px; font-family: monospace; color: #fff; white-space: nowrap; }
+    .corridor .tk { position: absolute; top: 76px; transform: translateX(-50%); font-size: 12px; font-family: monospace; color: var(--muted); }
+
+    .pie-wrap { display: flex; gap: 20px; align-items: center; }
+    .pie { width: 170px; height: 170px; border-radius: 50%; flex-shrink: 0; background: conic-gradient(#ff5252 0 65.36%, #ffaa00 65.36% 92.47%, #8ab4f8 92.47% 100%); box-shadow: 0 0 24px rgba(255,82,82,0.25); position: relative; }
+    .pie::after { content: '66.4 л'; position: absolute; inset: 42px; border-radius: 50%; background: var(--box); display: flex; align-items: center; justify-content: center; font-family: monospace; font-weight: bold; color: #fff; font-size: 18px; }
+    .legend { list-style: none; padding: 0; margin: 0; font-size: 15px; }
+    .legend li { margin: 6px 0; display: flex; align-items: center; gap: 8px; }
+    .legend i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+
+    pre.log { background: #010204; border: 1px solid var(--dark); border-radius: 10px; padding: 12px 14px; font-size: 14.5px; color: var(--muted); margin: 0; line-height: 1.6; white-space: pre-wrap; }
+    pre.log b { color: var(--cyan); font-weight: normal; }
+    ul.list { margin: 0; padding-left: 22px; font-size: 18px; line-height: 1.6; }
+    ul.list li::marker { color: var(--cyan); }
+
+    /* ===== Нижняя панель ===== */
+    #ui { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; background: #01070a; border-top: 1px solid var(--dark); display: flex; align-items: center; justify-content: center; gap: 12px; font-family: monospace; color: var(--muted); font-size: 13px; z-index: 10; }
+    #ui button, #top button { background: #0c1218; border: 1px solid var(--dark); color: var(--cyan); font-family: monospace; font-size: 14px; padding: 7px 14px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+    #ui button:hover, #top button:hover { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,243,255,0.3); }
+    #counter { min-width: 70px; text-align: center; color: #fff; font-size: 15px; }
+    #progress { position: fixed; left: 0; bottom: 56px; height: 3px; background: linear-gradient(90deg, var(--cyan), var(--amber)); box-shadow: 0 0 10px var(--cyan); transition: width .35s; z-index: 11; }
+    #hint { position: absolute; right: 18px; }
+    @media (max-width: 1150px) { #hint { display: none; } }
+    @media (max-width: 700px) { #top .brand { display: none; } #fs { display: none; } }
+
+    /* ===== Режим «Лента» для узкой панели ===== */
+    @media screen {
+        body.doc #viewport { display: block; overflow-y: auto; padding: 14px; }
+        body.doc #deck { width: auto; height: auto; transform: none !important; }
+        body.doc .slide { position: relative; inset: auto; opacity: 1 !important; visibility: visible !important; transform: none !important; transition: none; height: auto; padding: 22px 20px 50px; margin-bottom: 16px; border-radius: 16px; overflow: visible; }
+        body.doc .slide.active { border-color: var(--dim); }
+        body.doc .row { flex-direction: column; gap: 16px; }
+        body.doc .map { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+        body.doc .cards { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important; }
+        body.doc h1 { font-size: 30px; }
+        body.doc h2 { font-size: 23px; }
+        body.doc h3 { font-size: 17px; }
+        body.doc p, body.doc ul.list { font-size: 15px !important; }
+        body.doc .title-wrap .sub { font-size: 17px; }
+        body.doc table { font-size: 13.5px; }
+        body.doc th { font-size: 11px; padding: 7px 8px; }
+        body.doc td { padding: 6px 8px; }
+        body.doc code { white-space: normal; word-break: break-all; }
+        body.doc .note.big { font-size: 16px; }
+        body.doc .formula { font-size: 20px; }
+        body.doc .formula .frac { font-size: 17px; }
+        body.doc .mock { width: auto; max-width: 430px; margin-left: 40px; }
+        body.doc .pie-wrap { flex-wrap: wrap; }
+        body.doc .corridor { margin: 10px 10px 0; }
+        body.doc .footer { left: 20px; right: 20px; bottom: 14px; font-size: 11px; }
+    }
+
+    /* ===== Печать / PDF ===== */
+    @page { size: 1280px 720px; margin: 0; }
+    @media print {
+        html, body { overflow: visible; height: auto; background: var(--bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        #ui, #progress, #top { display: none !important; }
+        #viewport { position: static; display: block; }
+        #deck { transform: none !important; width: 1280px; height: auto; }
+        .slide { position: relative; opacity: 1 !important; visibility: visible !important; transform: none !important; width: 1280px; height: 720px; border-radius: 0; page-break-after: always; break-after: page; transition: none; }
+        code.try::after { content: ''; }
+    }
+</style>
+</head>
+<body>
+<div id="top">
+    <span class="brand">📖 QUANTUM TERMINAL v4 · ИНСТРУКЦИЯ</span>
+    <div id="sbox">
+        <input id="q" type="search" placeholder="Поиск: FUEL, пережог, матрица, уклон, клавиши…   ( / )" autocomplete="off" spellcheck="false">
+        <div id="results"></div>
+    </div>
+    <button id="mode">📄 Лента</button>
+</div>
+
+<div id="viewport">
+<div id="deck">
+
+<!-- 1. ТИТУЛ -->
+<section class="slide" data-title="О продукте" data-tags="о продукте формат установка офлайн данные лицензия для кого">
+    <div class="title-wrap">
+        <div class="logo">QUANTUM.CORE v4 · DEG</div>
+        <h1>Quantum Logistics &amp;<br><span class="accent">Engineering Terminal v4</span></h1>
+        <div class="sub">Инженерный калькулятор с модулем <span style="color:var(--amber)">контроля расхода топлива</span> для транспортных компаний</div>
+        <div class="cards" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 26px;">
+            <div class="card"><div class="lbl">Формат</div><div class="val">Один .html файл</div></div>
+            <div class="card"><div class="lbl">Установка</div><div class="val">Не требуется</div></div>
+            <div class="card"><div class="lbl">Интернет</div><div class="val">Работает офлайн</div></div>
+            <div class="card"><div class="lbl">Данные</div><div class="val">Только локально</div></div>
+            <div class="card fuel"><div class="lbl">Для кого</div><div class="val" style="font-size:15px">Диспетчеры, механики, логисты, водители, контролёры ГСМ</div></div>
+        </div>
+        <div class="note big warn"><b>Ключевая идея:</b> быстро проверить расход по путевому листу, выявить пережог и сравнить машины парка без Excel и учётной системы.</div>
+    </div>
+</section>
+
+<!-- 2. ЗАЧЕМ -->
+<section class="slide" data-title="Зачем это транспортной компании" data-tags="зачем бизнес ценность экономия деньги затраты пережог вопросы">
+    <div class="kicker">Ценность для бизнеса</div>
+    <h2>Зачем это <span class="accent">транспортной компании</span></h2>
+    <div class="row">
+        <div class="col">
+            <div class="note big warn">⛽ Топливо — одна из крупнейших статей затрат грузоперевозчика.</div>
+            <p>Даже небольшой систематический пережог в масштабах парка превращается в заметные деньги.</p>
+            <div class="card">
+                <div class="lbl">Пример масштаба</div>
+                <p style="margin:0; font-size:16px">Пережог <b>+5%</b> при норме 32 л/100км и пробеге 9 000 км/мес — это <span class="res f">~144 л</span> на одну машину в месяц, или <span class="res f">~9 360 ₽</span> при цене 65 ₽/л.</p>
+                <p style="margin:8px 0 0; font-size:16px">На парке из 12 ТС — <span class="res f">~112 000 ₽ в месяц</span>.</p>
+            </div>
+            <p class="muted" style="font-size:14px">Расчёт: <code>32*9000/100*0.05</code> = 144 л; <code>144*65</code> = 9 360 ₽; <code>9360*12</code> = 112 320 ₽.</p>
+        </div>
+        <div class="col w2">
+            <table>
+                <tr><th>Типичный вопрос</th><th>Инструмент</th></tr>
+                <tr><td>Сколько машина реально расходует на 100 км?</td><td><kbd class="f">FUEL</kbd></td></tr>
+                <tr><td>Есть ли пережог относительно нормы — в литрах и %?</td><td><kbd class="f">OVER</kbd></td></tr>
+                <tr><td>Какой средний расход по группе машин?</td><td><kbd>AVG</kbd></td></tr>
+                <tr><td>Какая машина выбивается из общей картины?</td><td><kbd>STD</kbd></td></tr>
+                <tr><td>Сколько стоит перерасход?</td><td><kbd>+</kbd> <kbd>−</kbd> <kbd>*</kbd> <kbd>/</kbd></td></tr>
+                <tr><td>Какой расход на трассе и в городе по отдельности?</td><td><kbd class="m">MATRIX</kbd> → <kbd class="m">INV</kbd></td></tr>
+                <tr><td>Каков уклон участка дороги?</td><td><kbd>tan</kbd> / <kbd>atan</kbd></td></tr>
+                <tr><td>Сколько вариантов порядка объезда точек?</td><td><kbd>n!</kbd></td></tr>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- 3. ИНТЕРФЕЙС -->
+<section class="slide" data-title="Интерфейс" data-tags="интерфейс экран дисплей статус история плоттер журнал кнопки раскладка help цифры">
+    <div class="kicker">Знакомство</div>
+    <h2>Интерфейс <span class="accent">терминала</span></h2>
+    <div class="row" style="align-items:center">
+        <div style="flex:0 0 auto">
+            <div class="mock">
+                <div class="zone m-disp">
+                    <span class="mk">1</span>
+                    <div class="m-stat"><span>QUANTUM.CORE v4</span><span>SHIFT</span><span>MATRIX</span><b>DEG</b></div>
+                    <div class="zone m-hist"><span class="mk" style="left:-56px">2</span>Расход топлива:</div>
+                    <div class="zone m-cur"><span class="mk" style="left:-56px">3</span>30.00 л/100км</div>
+                </div>
+                <div class="zone m-plot"><span class="mk">4</span>
+                    <svg viewBox="0 0 400 34" preserveAspectRatio="none"><path d="M0 17 Q25 3 50 17 T100 17 T150 17 T200 17 T250 17 T300 17 T350 17 T400 17" fill="none" stroke="#00f3ff" stroke-width="1.5"/></svg>
+                </div>
+                <div class="m-grid">
+                    <span class="sh">SHIFT</span><span class="mx">MATRIX</span><span class="fn">sin</span><span class="fn">cos</span><span class="fn">tan</span><span class="cl">C</span>
+                    <span class="fn">√</span><span class="fn">xʸ</span><span class="fn">log</span><span class="fn">ln</span><span class="fn">CONST</span><span class="op">/</span>
+                    <span class="fn">π</span><span>7</span><span>8</span><span>9</span><span class="fn">AVG</span><span class="op">*</span>
+                    <span class="fn">e</span><span>4</span><span>5</span><span>6</span><span class="fn">STD</span><span class="op">-</span>
+                    <span class="fn">n!</span><span>1</span><span>2</span><span>3</span><span class="fu">FUEL</span><span class="op">+</span>
+                    <span class="fn">( )</span><span>0</span><span>.</span><span>;</span><span class="fu">OVER</span><span class="fn">PLOT</span>
+                    <span class="th">THEME</span><span class="hp">HELP</span><span>,</span><span class="cl">⌫</span><span class="eq">=</span>
+                </div>
+                <div class="zone m-log"><span class="mk">5</span>&gt; Fuel (45 л / 150 км) = <b>30.00 л/100км</b></div>
+            </div>
+        </div>
+        <div class="col">
+            <ul class="zones-list">
+                <li><span class="n">1</span><div><b>Статус‑бар</b> — подсвечивает активные режимы SHIFT и MATRIX. Углы всегда в градусах (DEG).</div></li>
+                <li><span class="n">2</span><div><b>История</b> — показывает, что именно было посчитано.</div></li>
+                <li><span class="n">3</span><div><b>Дисплей</b> — ввод и результат. Длинные выражения автоматически уменьшаются.</div></li>
+                <li><span class="n">4</span><div><b>Плоттер</b> — графики функций и уровень значения.</div></li>
+                <li><span class="n">5</span><div><b>Журнал</b> — лента всех расчётов за сессию.</div></li>
+                <li><span class="n g">?</span><div><b>HELP</b> — эта инструкция сбоку или в отдельном окне, с поиском. <b>SHIFT + HELP</b>, затем кнопка — справка по ней.</div></li>
+            </ul>
+            <div class="note warn">Кнопки <kbd class="f">FUEL</kbd> и <kbd class="f">OVER</kbd> выделены янтарным цветом — это топливный модуль. Данные вводятся через запятую <kbd>,</kbd></div>
+        </div>
+    </div>
+</section>
+
+<!-- 4. КАРТА ФУНКЦИЙ -->
+<section class="slide" data-title="Карта функций" data-tags="карта функций обзор все кнопки возможности список">
+    <div class="kicker">Обзор</div>
+    <h2>Карта <span class="accent">функций</span></h2>
+    <div class="center-node"><span>Quantum Terminal v4</span></div>
+    <div class="map">
+        <div class="card fuel">
+            <div class="ico">⛽</div><h3>Топливный модуль</h3>
+            <div class="item"><b>FUEL</b><br>расход л/100 км</div>
+            <div class="item"><b>OVER</b><br>пережог / экономия в л и %</div>
+        </div>
+        <div class="card">
+            <div class="ico">📊</div><h3>Аналитика парка</h3>
+            <div class="item"><b>AVG</b><br>среднее по списку</div>
+            <div class="item"><b>STD</b><br>разброс, поиск аномалий</div>
+        </div>
+        <div class="card">
+            <div class="ico">🧮</div><h3>Базовые расчёты</h3>
+            <div class="item"><b>+ − * / ( )</b><br>нормы, бюджеты, стоимость</div>
+            <div class="item"><b>xʸ √ x² mod</b><br>степени, корни, остаток</div>
+        </div>
+        <div class="card">
+            <div class="ico">📐</div><h3>Инженерный модуль</h3>
+            <div class="item"><b>sin cos tan</b> / <b>asin acos atan</b></div>
+            <div class="item"><b>log ln 10ˣ eˣ n!</b></div>
+            <div class="item"><b>MATRIX</b>: DET TRANS INV</div>
+            <div class="item"><b>PLOT CONST π e</b></div>
+        </div>
+        <div class="card">
+            <div class="ico">⚙️</div><h3>Сервис</h3>
+            <div class="item"><b>HELP</b> инструкция с поиском</div>
+            <div class="item"><b>Журнал</b> операций</div>
+            <div class="item"><b>3 темы</b> оформления</div>
+            <div class="item"><b>Клавиатура</b> и горячие клавиши</div>
+        </div>
+    </div>
+</section>
+
+<!-- 5. FUEL -->
+<section class="slide" data-title="FUEL — расход на 100 км" data-tags="fuel расход топливо топлива бензин дизель литры километры л/100км 100 км заправка азс топливная карта">
+    <div class="kicker fuel">⛽ Топливный модуль · 1 из 2</div>
+    <h2><span class="fuel">FUEL</span> — фактический расход на 100 км</h2>
+    <div class="row">
+        <div class="col">
+            <div class="formula">Расход = <span class="frac"><span>Литры</span><span>Километры</span></span> × 100</div>
+            <p style="font-size:19px; text-align:center">Ввод: <code>литры</code> <kbd>,</kbd> <code>километры</code> → <kbd class="f">FUEL</kbd></p>
+            <table>
+                <tr><th>Ввод</th><th>Результат</th><th>Комментарий</th></tr>
+                <tr><td><code>45,150</code></td><td class="res f">30.00 л/100км</td><td>Пример из подсказки</td></tr>
+                <tr><td><code>52,160</code></td><td class="res f">32.50 л/100км</td><td>Седельный тягач, рейс</td></tr>
+                <tr><td><code>380,1200</code></td><td class="res f">31.67 л/100км</td><td>Расход за неделю</td></tr>
+                <tr><td><code>2064.4,6350</code></td><td class="res f">32.51 л/100км</td><td>Весь парк за месяц</td></tr>
+            </table>
+        </div>
+        <div class="col">
+            <h3>Защита от ошибок</h3>
+            <table>
+                <tr><th>Ситуация</th><th>Реакция</th></tr>
+                <tr><td>FUEL без запятой</td><td>Подсказка <code>Ввод: литры,км</code></td></tr>
+                <tr><td>Километры = 0 или &lt; 0</td><td><span class="badge b-red">ERROR</span></td></tr>
+                <tr><td>Отрицательные литры</td><td><span class="badge b-red">ERROR</span></td></tr>
+                <tr><td>Нечисловые данные</td><td><span class="badge b-red">ERROR</span></td></tr>
+            </table>
+            <div class="note">💡 <b>Источник данных:</b> литры — чеки АЗС или топливные карты при заправке «до полного бака»; километры — одометр между заправками или путевой лист.</div>
+        </div>
+    </div>
+</section>
+
+<!-- 6. OVER -->
+<section class="slide" data-title="OVER — пережог и экономия" data-tags="over пережог перерасход экономия норма факт отклонение регламент процент пороги премия">
+    <div class="kicker fuel">⛽ Топливный модуль · 2 из 2</div>
+    <h2><span class="fuel">OVER</span> — пережог и экономия</h2>
+    <div class="row">
+        <div class="col">
+            <div class="formula" style="font-size:24px">Δ = Факт − Норма &nbsp;&nbsp;│&nbsp;&nbsp; % = <span class="frac"><span>Δ</span><span>Норма</span></span> × 100</div>
+            <p style="font-size:19px; text-align:center">Ввод: <code>факт</code> <kbd>,</kbd> <code>норма</code> → <kbd class="f">OVER</kbd></p>
+            <table>
+                <tr><th>Ввод</th><th>Результат</th><th>Статус</th></tr>
+                <tr><td><code>38,32</code></td><td class="res f">+6.0 л (+18.8%)</td><td><span class="badge b-red">🔴 Пережог</span></td></tr>
+                <tr><td><code>402,384</code></td><td class="res f">+18.0 л (+4.7%)</td><td><span class="badge b-gry">⚪ Допуск</span></td></tr>
+                <tr><td><code>29,32</code></td><td class="res f">-3.0 л (-9.4%)</td><td><span class="badge b-grn">🟢 Экономия</span></td></tr>
+                <tr><td><code>48,48</code></td><td class="res f">0.0 л (0.0%)</td><td><span class="badge b-gry">⚪ В норму</span></td></tr>
+            </table>
+        </div>
+        <div class="col">
+            <h3>Пример внутреннего регламента</h3>
+            <table>
+                <tr><th>Отклонение</th><th>Статус</th><th>Действие</th></tr>
+                <tr><td>≤ 0%</td><td><span class="badge b-grn">Экономия</span></td><td>Учесть в премировании</td></tr>
+                <tr><td>0 … 5%</td><td><span class="badge b-gry">Допуск</span></td><td>Без действий</td></tr>
+                <tr><td>5 … 10%</td><td><span class="badge b-amb">Внимание</span></td><td>Проверить маршрут, загрузку, погоду</td></tr>
+                <tr><td>&gt; 10%</td><td><span class="badge b-red">Разбор</span></td><td>Диагностика ТС, телематика, беседа с водителем</td></tr>
+            </table>
+            <p class="muted" style="font-size:14px; margin:0">Пороги задаёт сама компания.</p>
+            <div class="note">💡 OVER сравнивает любые две величины одной размерности: литры за рейс или л/100км. Пример: <code>34.5,32</code> → <span class="res f">+2.5 (+7.8%)</span>. Подпись «л» в этом случае читайте как «л/100км».</div>
+        </div>
+    </div>
+</section>
+
+<!-- 7. ПРОЦЕСС -->
+<section class="slide" data-title="Проверка путевого листа" data-tags="путевой лист проверка процесс алгоритм порядок надбавка зима зимняя коэффициент рейс">
+    <div class="kicker fuel">⛽ Рабочий процесс</div>
+    <h2>Проверка <span class="fuel">путевого листа</span></h2>
+    <div class="row">
+        <div class="col">
+            <div class="flow">
+                <div class="step"><span class="i">📄</span><div><b>Путевой лист / топливная карта</b><br><span class="muted">пробег, км · заправлено, л</span></div></div>
+                <div class="arrow">▼</div>
+                <div class="step fuel"><span class="i">⛽</span><div><b>FUEL</b>: <code>литры,км</code> → фактический л/100км</div></div>
+                <div class="arrow">▼</div>
+                <div class="step"><span class="i">📏</span><div><b>Норма, л</b>: <code>норма*км/100</code>, при надбавке <code>*1.1</code></div></div>
+                <div class="arrow">▼</div>
+                <div class="step fuel"><span class="i">⚖️</span><div><b>OVER</b>: <code>факт,норма</code> → отклонение в л и %</div></div>
+                <div class="arrow">▼</div>
+                <div class="split">
+                    <div class="step good"><span class="i">✅</span><div><b>≤ 5%</b><br>Принять</div></div>
+                    <div class="step bad"><span class="i">⚠️</span><div><b>&gt; 5%</b> — разбор<br><code>литры*цена</code></div></div>
+                </div>
+                <div class="arrow">▼</div>
+                <div class="step"><span class="i">📋</span><div><b>Журнал</b> фиксирует все шаги</div></div>
+            </div>
+        </div>
+        <div class="col">
+            <h3>Пример</h3>
+            <p style="font-size:16px">Рейс <b>150 км</b>, норма <b>32 л/100км</b>, зимняя надбавка <b>10%</b>, заправлено <b>58 л</b>.</p>
+            <table>
+                <tr><th>Шаг</th><th>Нажатия</th><th class="r">Дисплей</th></tr>
+                <tr><td>1. Факт. расход</td><td><code>58,150</code> <kbd class="f">FUEL</kbd></td><td class="r res f">38.67 л/100км</td></tr>
+                <tr><td>2. Норма, л</td><td><code>32*150/100*1.1</code> <kbd>=</kbd></td><td class="r res">52.8</td></tr>
+                <tr><td>3. Пережог</td><td><code>58,52.8</code> <kbd class="f">OVER</kbd></td><td class="r res f">+5.2 л (+9.8%)</td></tr>
+                <tr><td>4. Стоимость*</td><td><code>5.2*65</code> <kbd>=</kbd></td><td class="r res">338 ₽</td></tr>
+            </table>
+            <p class="muted" style="font-size:14px; margin:0">* Цена 65 ₽/л условная.</p>
+            <div class="note warn">Итог: <span class="badge b-amb">🟡 Внимание</span> — отклонение 9.8% попадает в диапазон 5…10%. Нужно проверить маршрут, загрузку и погоду.</div>
+        </div>
+    </div>
+</section>
+
+<!-- 8. НОРМЫ И БЮДЖЕТ -->
+<section class="slide" data-title="Нормы, стоимость, бюджет" data-tags="норма нормы стоимость бюджет цена рубли деньги запас хода бак процент проценты % остаток арифметика приоритет операций скобки">
+    <div class="kicker">🧮 Базовые расчёты</div>
+    <h2>Расчёт <span class="accent">нормы, стоимости и бюджета</span></h2>
+    <p>Поддерживаются скобки, приоритет операций и неявное умножение: <code>2(3)</code> → <code>2*(3)</code>.</p>
+    <table>
+        <tr><th>Задача</th><th>Выражение</th><th class="r">Результат</th></tr>
+        <tr><td>Норма на рейс 480 км</td><td><code>32*480/100</code></td><td class="r res">153.6 л</td></tr>
+        <tr><td>Норма с надбавкой 10%</td><td><code>32*480/100*1.1</code></td><td class="r res">168.96 л</td></tr>
+        <tr><td>Стоимость топлива на рейс</td><td><code>168.96*65</code></td><td class="r res">10982.4 ₽</td></tr>
+        <tr><td>Запас хода по баку 600 л</td><td><code>600/32*100</code></td><td class="r res">1875 км</td></tr>
+        <tr><td>Литров до конца маршрута (920 км, пройдено 480)</td><td><code>(920-480)*32/100</code></td><td class="r res">140.8 л</td></tr>
+        <tr><td>Месячный бюджет на 12 ТС (9 000 км каждое)</td><td><code>12*9000*32/100*65</code></td><td class="r res">2246400 ₽</td></tr>
+    </table>
+    <div style="height:16px"></div>
+    <div class="note warn big">⚠️ <b>Важно:</b> клавиша <kbd>%</kbd> означает <b>остаток от деления</b>, а не процент. Проценты считайте умножением: +15% → <code>*1.15</code>, −8% → <code>*0.92</code>.</div>
+</section>
+
+<!-- 9. AVG / STD -->
+<section class="slide" data-title="AVG и STD — аналитика парка" data-tags="avg std среднее средний разброс стандартное отклонение сигма аномалия коридор парк сравнение машин статистика">
+    <div class="kicker">📊 Аналитика парка</div>
+    <h2><span class="accent">AVG</span> и <span class="accent">STD</span> — поиск проблемных машин</h2>
+    <div class="row">
+        <div class="col">
+            <p style="font-size:16px"><b>AVG</b> — среднее арифметическое; <b>STD</b> — стандартное отклонение (по генеральной совокупности, деление на n).<br>Ввод: <code>значение1,значение2,…</code> → <kbd>AVG</kbd> / <kbd>STD</kbd></p>
+            <table class="sm">
+                <tr><th>Ввод (расход 5 тягачей)</th><th>Кнопка</th><th class="r">Результат</th></tr>
+                <tr><td><code>31.2,33.5,29.8,35.1,32.4</code></td><td><kbd>AVG</kbd></td><td class="r res">32.4</td></tr>
+                <tr><td><code>31.2,33.5,29.8,35.1,32.4</code></td><td><kbd>STD</kbd></td><td class="r res">1.82756…</td></tr>
+                <tr><td>Верхняя граница: <code>32.4+1.8276</code></td><td><kbd>=</kbd></td><td class="r res">34.2276</td></tr>
+                <tr><td>Нижняя граница: <code>32.4-1.8276</code></td><td><kbd>=</kbd></td><td class="r res">30.5724</td></tr>
+            </table>
+            <div class="note">💡 Низкий STD — однородный парк и стабильные водители. Рост STD от месяца к месяцу — сигнал проверить технику или учёт.</div>
+        </div>
+        <div class="col">
+            <h3>Коридор «среднее ± σ», л/100км</h3>
+            <div class="corridor">
+                <div class="band" style="left:22.43%; width:52.28%"></div>
+                <div class="axis"></div>
+                <div class="mean" style="left:48.57%"></div>
+                <div class="pt lo" style="left:11.43%"></div><div class="pl" style="left:11.43%">ТС‑03</div>
+                <div class="pt" style="left:31.43%"></div><div class="pl" style="left:31.43%">ТС‑01</div>
+                <div class="pt" style="left:48.57%"></div><div class="pl" style="left:48.57%">ТС‑05</div>
+                <div class="pt" style="left:64.29%"></div><div class="pl" style="left:64.29%">ТС‑02</div>
+                <div class="pt hi" style="left:87.14%"></div><div class="pl" style="left:87.14%">ТС‑04</div>
+                <div class="tk" style="left:0%">29</div><div class="tk" style="left:14.29%">30</div><div class="tk" style="left:28.57%">31</div><div class="tk" style="left:42.86%">32</div><div class="tk" style="left:57.14%">33</div><div class="tk" style="left:71.43%">34</div><div class="tk" style="left:85.71%">35</div><div class="tk" style="left:100%">36</div>
+            </div>
+            <table class="sm">
+                <tr><th>ТС</th><th class="r">Расход</th><th>Статус</th></tr>
+                <tr><td>ТС‑01</td><td class="r">31.2</td><td><span class="badge b-grn">В коридоре</span></td></tr>
+                <tr><td>ТС‑02</td><td class="r">33.5</td><td><span class="badge b-grn">В коридоре</span></td></tr>
+                <tr><td>ТС‑03</td><td class="r">29.8</td><td><span class="badge b-blu">Ниже: проверить данные</span></td></tr>
+                <tr><td>ТС‑04</td><td class="r"><b>35.1</b></td><td><span class="badge b-red">Выше: кандидат на разбор</span></td></tr>
+                <tr><td>ТС‑05</td><td class="r">32.4</td><td><span class="badge b-grn">Ровно среднее</span></td></tr>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- 10. КЕЙС -->
+<section class="slide" data-title="Кейс: месячный отчёт" data-tags="кейс отчёт отчет месяц месячный парк диаграмма итоги пример средневзвешенный">
+    <div class="kicker fuel">⛽ Кейс</div>
+    <h2>Месячный отчёт по парку <span class="muted" style="font-size:20px">· норма 32 л/100км</span></h2>
+    <table class="sm">
+        <tr><th>ТС</th><th class="r">Пробег, км</th><th class="r">Факт, л</th><th class="r">FUEL, л/100км</th><th class="r">Норма, л</th><th>OVER</th></tr>
+        <tr><td>ТС‑01</td><td class="r">1500</td><td class="r">468</td><td class="r">31.20</td><td class="r">480</td><td>-12.0 л (-2.5%) <span class="badge b-grn">экономия</span></td></tr>
+        <tr><td>ТС‑02</td><td class="r">1200</td><td class="r">402</td><td class="r">33.50</td><td class="r">384</td><td>+18.0 л (+4.7%) <span class="badge b-gry">допуск</span></td></tr>
+        <tr><td>ТС‑03</td><td class="r">1000</td><td class="r">298</td><td class="r">29.80</td><td class="r">320</td><td>-22.0 л (-6.9%) <span class="badge b-grn">экономия</span></td></tr>
+        <tr><td>ТС‑04</td><td class="r">1400</td><td class="r">491.4</td><td class="r">35.10</td><td class="r">448</td><td><b>+43.4 л (+9.7%)</b> <span class="badge b-amb">внимание</span></td></tr>
+        <tr><td>ТС‑05</td><td class="r">1250</td><td class="r">405</td><td class="r">32.40</td><td class="r">400</td><td>+5.0 л (+1.3%) <span class="badge b-gry">допуск</span></td></tr>
+        <tr class="total"><td>Парк</td><td class="r">6350</td><td class="r">2064.4</td><td class="r">32.51</td><td class="r">2032</td><td>+32.4 л (+1.6%)</td></tr>
+    </table>
+    <div class="row" style="margin-top:16px; gap:30px">
+        <div style="flex:0 0 auto">
+            <div class="pie-wrap">
+                <div class="pie"></div>
+                <ul class="legend">
+                    <li style="color:#fff; font-weight:bold; margin-bottom:8px">Структура пережога</li>
+                    <li><i style="background:#ff5252"></i>ТС‑04 — 43.4 л (65%)</li>
+                    <li><i style="background:#ffaa00"></i>ТС‑02 — 18.0 л (27%)</li>
+                    <li><i style="background:#8ab4f8"></i>ТС‑05 — 5.0 л (8%)</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col" style="gap:8px">
+            <ul class="list" style="font-size:15.5px; line-height:1.5">
+                <li><b style="color:var(--red)">65%</b> пережога даёт одна машина — ТС‑04. Начинать разбор нужно с неё.</li>
+                <li>Экономия ТС‑01 и ТС‑03 (<b>34 л</b>) частично компенсирует перерасход: итог по парку <b>+1.6%</b>.</li>
+                <li>Простое среднее (AVG = 32.40) и средневзвешенное по пробегу (FUEL по парку = 32.51) различаются. Для отчётов корректнее <b style="color:var(--amber)">FUEL по суммарным литрам и км</b>.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- 11. MATRIX -->
+<section class="slide" data-title="MATRIX — трасса / город" data-tags="matrix матрица матрицы det trans inv определитель транспонирование обратная трасса город гружёный порожний система уравнений точка с запятой">
+    <div class="kicker" style="color:var(--pink)">📐 Матричный режим</div>
+    <h2><span style="color:var(--pink)">MATRIX</span> — расход «трасса / город» по двум рейсам</h2>
+    <div class="row">
+        <div class="col">
+            <table class="sm">
+                <tr><th>Кнопка в режиме MATRIX</th><th>Действие</th></tr>
+                <tr><td><kbd class="m">DET</kbd> (вместо sin)</td><td>Определитель</td></tr>
+                <tr><td><kbd class="m">TRANS</kbd> (вместо cos)</td><td>Транспонирование</td></tr>
+                <tr><td><kbd class="m">INV</kbd> (вместо tan)</td><td>Обратная матрица</td></tr>
+            </table>
+            <p style="font-size:16px; margin-top:4px"><b>Задача:</b> как отдельно оценить расход на трассе и в городе, если известны только итоги двух рейсов?</p>
+            <table class="sm">
+                <tr><th>Рейс</th><th class="r">Трасса, ч</th><th class="r">Город, ч</th><th class="r">Израсходовано, л</th></tr>
+                <tr><td>A</td><td class="r">2</td><td class="r">1</td><td class="r">70</td></tr>
+                <tr><td>B</td><td class="r">1</td><td class="r">3</td><td class="r">85</td></tr>
+            </table>
+            <div class="note ok">✅ Проверка: 2·25 + 20 = 70 и 25 + 3·20 = 85. Так же можно разделить расход «гружёный / порожний» или «лето / зима».</div>
+        </div>
+        <div class="col">
+            <h3 style="color:var(--pink)">Решение</h3>
+            <table class="sm">
+                <tr><th>Шаг</th><th>Нажатия</th><th class="r">Дисплей</th></tr>
+                <tr><td>1. Режим</td><td><kbd class="m">MATRIX</kbd></td><td class="r res">1,2;3,4</td></tr>
+                <tr><td>2. Ввод</td><td><code>2,1;1,3</code></td><td class="r res">2,1;1,3</td></tr>
+                <tr><td>3. Решаемость</td><td><kbd class="m">DET</kbd></td><td class="r res">5 (≠ 0)</td></tr>
+                <tr><td>4. Обратная</td><td><code>2,1;1,3</code> <kbd class="m">INV</kbd></td><td class="r res">0.6,-0.2;-0.2,0.4</td></tr>
+                <tr><td>5. Трасса</td><td><code>0.6*70-0.2*85</code> <kbd>=</kbd></td><td class="r res f">25 л/ч</td></tr>
+                <tr><td>6. Город</td><td><code>0.4*85-0.2*70</code> <kbd>=</kbd></td><td class="r res f">20 л/ч</td></tr>
+            </table>
+            <div class="note">💡 Обычные выражения через <kbd>=</kbd> считаются и в режиме MATRIX. Выключать его не нужно. Уже введённая матрица при включении режима сохраняется.</div>
+        </div>
+    </div>
+</section>
+
+<!-- 12. ИНЖЕНЕРНЫЕ -->
+<section class="slide" data-title="Инженерные функции" data-tags="инженерные sin cos tan asin acos atan shift уклон угол градусы подъём высота √ корень x² квадрат xʸ степень 10ˣ n! факториал mod остаток log ln exp eˣ логарифм маршрут маршруты паллеты">
+    <div class="kicker">📐 Инженерный модуль</div>
+    <h2>Инженерные функции <span class="accent">в логистике</span></h2>
+    <p style="font-size:16px">Углы задаются <b>в градусах</b>. <kbd>SHIFT</kbd> включает альтернативную функцию и автоматически отключается после одного действия.</p>
+    <table class="sm">
+        <tr><th>Функция</th><th>SHIFT</th><th>Применение</th><th>Пример</th><th class="r">Результат</th></tr>
+        <tr><td><kbd>tan</kbd></td><td>atan</td><td>Уклон дороги в % по углу</td><td><code>4</code> tan <code>*100</code> =</td><td class="r res">6.99 %</td></tr>
+        <tr><td><kbd>atan</kbd></td><td>—</td><td>Угол подъёма по уклону 6%</td><td><code>0.06</code> SHIFT tan</td><td class="r res">3.43°</td></tr>
+        <tr><td><kbd>sin</kbd></td><td>asin</td><td>Набор высоты на 1 км при 3°</td><td><code>3</code> sin <code>*1000</code> =</td><td class="r res">52.3 м</td></tr>
+        <tr><td><kbd>cos</kbd></td><td>acos</td><td>Горизонтальная проекция участка</td><td><code>3</code> cos <code>*1000</code> =</td><td class="r res">998.6 м</td></tr>
+        <tr><td><kbd>√</kbd></td><td>x²</td><td>Прямое расстояние на плане площадки</td><td><code>120</code> xʸ <code>2+50</code> xʸ <code>2</code> √</td><td class="r res">130 м</td></tr>
+        <tr><td><kbd>xʸ</kbd></td><td>10ˣ</td><td>Индексация тарифа 8% за 3 года</td><td><code>1.08</code> xʸ <code>3</code> =</td><td class="r res">1.259712</td></tr>
+        <tr><td><kbd>n!</kbd></td><td>mod</td><td>Варианты порядка объезда 6 точек</td><td><code>6</code> n!</td><td class="r res">720</td></tr>
+        <tr><td><kbd>mod</kbd></td><td>—</td><td>Остаток паллет: 133 шт., по 33 на машину</td><td><code>133</code> SHIFT n! <code>33</code> =</td><td class="r res">1</td></tr>
+        <tr><td><kbd>log</kbd> / <kbd>ln</kbd></td><td>×10ˣ / eˣ</td><td>Научная запись, экспоненциальные модели</td><td><code>2.5</code> SHIFT log <code>3</code> =</td><td class="r res">2500</td></tr>
+    </table>
+    <div style="height:12px"></div>
+    <div class="note">💡 <b>n!</b> показывает, почему маршруты нельзя перебирать вручную: 10 точек дают <span class="res">3628800</span> вариантов порядка объезда. Набор высоты (sin) помогает объяснить повышенный расход на горных маршрутах.</div>
+</section>
+
+<!-- 13. КОНСТАНТЫ И ГРАФИК -->
+<section class="slide" data-title="Константы, график, кнопки" data-tags="const константы π pi e число пи экспонента plot график плоттер скобки умная скобка ⌫ backspace c сброс очистка help справка инструкция">
+    <div class="kicker">⚙️ Вспомогательные функции</div>
+    <h2>Константы, график и <span class="accent">служебные кнопки</span></h2>
+    <div class="row">
+        <div class="col w2">
+            <table class="sm">
+                <tr><th>Кнопка</th><th>Действие</th></tr>
+                <tr><td><kbd>π</kbd> <kbd>e</kbd></td><td>Вставляют константу в выражение: <code>2*π</code></td></tr>
+                <tr><td><kbd>CONST</kbd></td><td>По кругу перебирает физические константы <b>c, G, h, Na</b>. Повторное нажатие заменяет константу на следующую</td></tr>
+                <tr><td><kbd>PLOT</kbd></td><td>Рисует горизонтальную линию на уровне вычисленного значения</td></tr>
+                <tr><td><kbd>( )</kbd></td><td>Умная скобка: открывает или закрывает по контексту. Незакрытые скобки закрываются при вычислении</td></tr>
+                <tr><td><kbd>⌫</kbd></td><td>Удаляет последний символ</td></tr>
+                <tr><td><kbd style="color:var(--red); border-color:var(--red)">C</kbd></td><td>Сброс. <b>Двойное нажатие</b> также очищает журнал и график</td></tr>
+                <tr><td><kbd class="h">HELP</kbd></td><td>Инструкция сбоку от калькулятора, <b>⧉</b> — в отдельном окне, <b>⬇</b> — сохранить в файл. <b>SHIFT + HELP</b>, затем любая кнопка — справка по ней</td></tr>
+            </table>
+        </div>
+        <div class="col">
+            <div class="card">
+                <div class="lbl">Автографики</div>
+                <p style="font-size:16px; margin:0">Графики <b>sin, cos, tan, √</b> и <b>x²</b> строятся автоматически при вычислении этих функций. У tan нет ложных линий на асимптотах.</p>
+            </div>
+            <div class="note warn">⚠️ Масштаб плоттера — 20 px на единицу, видимый диапазон по Y примерно от −3 до +3. Значения вроде 32 л/100км уйдут за край. PLOT полезен для коэффициентов и отклонений.</div>
+        </div>
+    </div>
+</section>
+
+<!-- 14. ЖУРНАЛ, ТЕМЫ, КЛАВИШИ -->
+<section class="slide" data-title="Журнал, темы, клавиатура" data-tags="журнал лог история темы theme оформление цвет клавиатура горячие клавиши enter backspace esc delete f1 help справка поиск">
+    <div class="kicker">⚙️ Сервис</div>
+    <h2>Журнал, темы и <span class="accent">клавиатура</span></h2>
+    <div class="row">
+        <div class="col">
+            <h3>📋 Журнал операций</h3>
+            <pre class="log">&gt; Fuel (58 л / 150 км) = <b>38.67 л/100км</b>
+&gt; 32*150/100*1.1 = <b>52.8</b>
+&gt; Excess (58 vs 52.8) = <b>+5.2 л (+9.8%)</b>
+&gt; 5.2*65 = <b>338</b></pre>
+            <p style="font-size:16px">Удобно показывать при разборе путевого листа: видна вся цепочка вычислений.</p>
+            <h3>🎨 Темы (кнопка THEME)</h3>
+            <table class="sm">
+                <tr><th>Тема</th><th>Где удобна</th></tr>
+                <tr><td style="color:var(--cyan)">CYBERPUNK</td><td>Диспетчерская, ночные смены</td></tr>
+                <tr><td style="color:#e2e8f0">LAB LIGHT</td><td>Офис, скриншоты для отчётов</td></tr>
+                <tr><td style="color:var(--amber)">AMBER MATRIX</td><td>Длительная работа</td></tr>
+            </table>
+        </div>
+        <div class="col">
+            <h3>⌨️ Горячие клавиши</h3>
+            <table class="sm">
+                <tr><th>Клавиша</th><th>Действие</th></tr>
+                <tr><td><kbd>0–9</kbd> <kbd>.</kbd> <kbd>,</kbd> <kbd>;</kbd></td><td>Ввод</td></tr>
+                <tr><td><kbd>+</kbd> <kbd>−</kbd> <kbd>*</kbd> <kbd>/</kbd></td><td>Операции</td></tr>
+                <tr><td><kbd>%</kbd></td><td>Остаток от деления</td></tr>
+                <tr><td><kbd>^</kbd></td><td>Степень</td></tr>
+                <tr><td><kbd>(</kbd> <kbd>)</kbd></td><td>Скобки</td></tr>
+                <tr><td><kbd>Enter</kbd> / <kbd>=</kbd></td><td>Вычислить</td></tr>
+                <tr><td><kbd>Backspace</kbd></td><td>Стереть символ</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Закрыть инструкцию, иначе сброс</td></tr>
+                <tr><td><kbd>Delete</kbd></td><td>Сброс (двойной — очистка журнала)</td></tr>
+                <tr><td><kbd class="h">F1</kbd> / <kbd class="h">?</kbd></td><td>Инструкция (HELP)</td></tr>
+                <tr><td><kbd>/</kbd> или <kbd>Ctrl+F</kbd></td><td>Поиск в инструкции</td></tr>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- 15. ОГРАНИЧЕНИЯ -->
+<section class="slide" data-title="Ограничения" data-tags="ограничения ошибки error проблемы обход нельзя экспорт excel 1с радианы выборочное">
+    <div class="kicker">⚠️ Важно знать</div>
+    <h2>Ограничения и <span class="fuel">как их обойти</span></h2>
+    <table class="sm">
+        <tr><th>Ограничение</th><th>Как обойти</th></tr>
+        <tr><td>В FUEL, OVER, AVG, STD — только числа, без выражений (<code>45+10,150</code> → ERROR)</td><td>Сначала вычислите значение через <kbd>=</kbd>, затем введите список</td></tr>
+        <tr><td>Результат FUEL и OVER — текст с единицами, его нельзя продолжить вычислениями</td><td>Перенаберите нужное число вручную</td></tr>
+        <tr><td><kbd>%</kbd> — остаток от деления, а не процент</td><td>Используйте <code>*1.15</code>, <code>*0.92</code> и т.п.</td></tr>
+        <tr><td>Углы только в градусах</td><td>Радианы переводите: <code>рад*180/π</code></td></tr>
+        <tr><td>Журнал не сохраняется при перезагрузке страницы</td><td>Скриншот или копирование текста журнала</td></tr>
+        <tr><td>Нет экспорта в Excel или 1С</td><td>Инструмент для оперативной проверки, а не для учёта</td></tr>
+        <tr><td>STD считается по генеральной совокупности</td><td>Для выборочного: <code>STD*√(n/(n−1))</code></td></tr>
+        <tr><td>Матрицы только 2×2</td><td>Для большего числа режимов — Excel или учётная система</td></tr>
+    </table>
+</section>
+
+<!-- 16. ШПАРГАЛКА -->
+<section class="slide" data-title="Шпаргалка диспетчера" data-tags="шпаргалка памятка кратко быстро сводка все функции">
+    <div class="kicker fuel">📌 Распечатать и повесить у монитора</div>
+    <h2>Шпаргалка <span class="fuel">диспетчера</span></h2>
+    <table>
+        <tr><th>Нужно узнать</th><th>Ввод</th><th>Кнопка</th></tr>
+        <tr><td><b>Расход на 100 км</b></td><td><code>литры,км</code></td><td><kbd class="f">FUEL</kbd></td></tr>
+        <tr><td><b>Пережог или экономию</b></td><td><code>факт,норма</code></td><td><kbd class="f">OVER</kbd></td></tr>
+        <tr><td>Норму в литрах</td><td><code>норма*км/100</code></td><td><kbd>=</kbd></td></tr>
+        <tr><td>Норму с надбавкой</td><td><code>норма*км/100*1.1</code></td><td><kbd>=</kbd></td></tr>
+        <tr><td>Стоимость пережога</td><td><code>литры*цена</code></td><td><kbd>=</kbd></td></tr>
+        <tr><td>Средний расход группы</td><td><code>р1,р2,р3,…</code></td><td><kbd>AVG</kbd></td></tr>
+        <tr><td>Разброс по группе</td><td><code>р1,р2,р3,…</code></td><td><kbd>STD</kbd></td></tr>
+        <tr><td>Расход трасса / город</td><td><code>a,b;c,d</code></td><td><kbd class="m">MATRIX</kbd> → <kbd class="m">INV</kbd></td></tr>
+        <tr><td>Уклон в % по углу</td><td><code>угол</code> → tan → <code>*100</code></td><td><kbd>=</kbd></td></tr>
+        <tr><td>Варианты маршрута</td><td><code>число точек</code></td><td><kbd>n!</kbd></td></tr>
+    </table>
+</section>
+
+<!-- 17. ИТОГИ -->
+<section class="slide" data-title="Итоги и развитие" data-tags="итоги развитие доработки идеи планы norm cost csv mpg">
+    <div class="kicker">🚀 Итоги</div>
+    <h2>Итоги и <span class="accent">развитие</span></h2>
+    <div class="row">
+        <div class="col">
+            <h3>Что даёт калькулятор уже сейчас</h3>
+            <ul class="list" style="font-size:17px">
+                <li>⛽ Мгновенный расчёт расхода и пережога по путевому листу</li>
+                <li>📊 Выявление проблемных машин через AVG и STD</li>
+                <li>🧮 Расчёт норм, бюджетов и стоимости перерасхода</li>
+                <li>📐 Уклоны, расстояния, разделение расхода по режимам</li>
+                <li>🔒 Офлайн, без установки, данные не покидают компьютер</li>
+            </ul>
+            <div class="note big warn" style="margin-top:auto"><b>Quantum Terminal v4</b> — карманный инструмент контроля ГСМ в одном файле, который открывается за секунду.</div>
+        </div>
+        <div class="col">
+            <h3>Возможные доработки транспортного блока</h3>
+            <table class="sm">
+                <tr><th>Идея</th><th>Польза</th></tr>
+                <tr><td><b>NORM</b>: <code>норма,км,коэф</code> → литры</td><td>Убирает ручной расчёт нормы</td></tr>
+                <tr><td><b>COST</b>: <code>литры,цена</code> → рубли</td><td>Сразу даёт стоимость пережога</td></tr>
+                <tr><td>Цвет OVER по порогам регламента</td><td>Мгновенная визуальная оценка</td></tr>
+                <tr><td>Экспорт журнала в CSV</td><td>Перенос в Excel и отчёты</td></tr>
+                <tr><td>Журнал в <code>localStorage</code></td><td>Не теряется при закрытии вкладки</td></tr>
+                <tr><td>л/100км ↔ км/л ↔ MPG</td><td>Иностранная техника и документация</td></tr>
+            </table>
+        </div>
+    </div>
+</section>
+
+</div>
+</div>
+
+<div id="progress"></div>
+<div id="ui">
+    <button id="prev" title="Назад (←)">◀</button>
+    <span id="counter">1 / 17</span>
+    <button id="next" title="Вперёд (→)">▶</button>
+    <button id="toc-btn" title="Содержание и поиск (/)">☰</button>
+    <button id="fs" title="Полный экран (F)">⛶</button>
+    <button id="pr" title="Печать / PDF (P)">🖨</button>
+    <span id="hint">← → навигация · / поиск · F полный экран · P печать</span>
+</div>
+
+<script>
+(function () {
+    function $(id) { return document.getElementById(id); }
+    var slides = [].slice.call(document.querySelectorAll('.slide'));
+    var deck = $('deck'), vp = $('viewport'), counter = $('counter'), progress = $('progress'),
+        q = $('q'), res = $('results'), modeBtn = $('mode');
+    var cur = 0, total = slides.length, userMode = null, sel = -1, items = [], lock = false;
+    var host = window.parent !== window ? window.parent : (window.opener || null);
+
+    function norm(s) { return String(s).toLowerCase().replace(/ё/g, 'е').replace(/−/g, '-'); }
+    function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+    // ===== Поисковый индекс =====
+    var index = slides.map(function (s, k) {
+        var title = s.getAttribute('data-title') || ('Слайд ' + (k + 1));
+        var text = s.textContent.replace(/\s+/g, ' ').trim();
+        return { k: k, title: title, nt: norm(title), ng: norm(s.getAttribute('data-tags') || ''), text: text, nx: norm(text) };
+    });
+
+    slides.forEach(function (s, k) {
+        var f = document.createElement('div');
+        f.className = 'footer';
+        f.innerHTML = '<span>Quantum Terminal v4 · Контроль топлива для транспортных компаний</span><span>' + (k + 1) + ' / ' + total + '</span>';
+        s.appendChild(f);
+    });
+
+    var topics = [
+        ['⛽ FUEL', 4, 'fuel'], ['⛽ OVER', 5, 'over'], ['📄 Путевой лист', 6, 'путевой'], ['🧮 Нормы и бюджет', 7, 'норма'],
+        ['📊 AVG / STD', 8, 'std'], ['📈 Отчёт по парку', 9, ''], ['🔲 MATRIX', 10, 'matrix'], ['📐 Уклон, sin, tan', 11, 'уклон'],
+        ['🔢 n! / mod', 11, 'mod'], ['π CONST / PLOT', 12, 'plot'], ['❓ HELP', 12, 'help'], ['⌨️ Клавиши', 13, 'enter'],
+        ['⚠️ Ограничения', 14, ''], ['📌 Шпаргалка', 15, '']
+    ];
+
+    function count(h, w) { var n = 0, i = 0; while ((i = h.indexOf(w, i)) !== -1) { n++; i += w.length; } return n; }
+
+    function search(qs) {
+        var words = norm(qs).split(/\s+/).filter(Boolean);
+        if (!words.length) return null;
+        var list = [];
+        index.forEach(function (it) {
+            var score = 0, ok = true;
+            words.forEach(function (w) {
+                var inT = it.nt.indexOf(w) !== -1, inG = it.ng.indexOf(w) !== -1, cnt = count(it.nx, w);
+                if (!inT && !inG && !cnt) ok = false;
+                score += (inT ? 20 : 0) + (inG ? 8 : 0) + Math.min(cnt, 10);
+            });
+            if (ok) list.push({ it: it, score: score });
+        });
+        list.sort(function (a, b) { return b.score - a.score || a.it.k - b.it.k; });
+        return { words: words, list: list };
+    }
+
+    function rx(words) {
+        return new RegExp('(' + words.map(function (w) {
+            return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/е/g, '[её]');
+        }).join('|') + ')', 'gi');
+    }
+
+    function hl(s, words) {
+        var r = rx(words), out = '', last = 0, m;
+        while ((m = r.exec(s))) {
+            if (!m[0].length) { r.lastIndex++; continue; }
+            out += esc(s.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+            last = m.index + m[0].length;
+        }
+        return out + esc(s.slice(last));
+    }
+
+    function snippet(it, words) {
+        var i = -1;
+        words.forEach(function (w) { var j = it.nx.indexOf(w); if (j !== -1 && (i === -1 || j < i)) i = j; });
+        if (i === -1) return esc(it.text.slice(0, 110)) + '…';
+        var a = Math.max(0, i - 45), b = Math.min(it.text.length, i + 80);
+        return (a > 0 ? '…' : '') + hl(it.text.slice(a, b), words) + (b < it.text.length ? '…' : '');
+    }
+
+    function render() {
+        var qs = q.value.trim(), html = '';
+        items = [];
+        if (!qs) {
+            if (host) html += '<div class="r-tip">💡 Примеры со значком ▸ кликабельны: они подставятся в калькулятор</div>';
+            html += '<div class="r-h">Быстрый переход</div><div class="chips">' +
+                topics.map(function (t, i) { return '<button class="chip" data-c="' + i + '">' + esc(t[0]) + '</button>'; }).join('') + '</div>';
+            html += '<div class="r-h">Содержание</div>';
+            index.forEach(function (it) {
+                items.push({ k: it.k, words: [] });
+                html += '<div class="r-item" data-i="' + (items.length - 1) + '"><b>' + (it.k + 1) + '. ' + esc(it.title) + '</b></div>';
+            });
+        } else {
+            var r = search(qs);
+            if (!r.list.length) {
+                html = '<div class="r-empty">Ничего не найдено по запросу «' + esc(qs) + '»<br><span>Попробуйте: топливо, пережог, матрица, уклон, клавиши</span></div>';
+            } else {
+                html = '<div class="r-h">Найдено слайдов: ' + r.list.length + '</div>';
+                r.list.forEach(function (o) {
+                    items.push({ k: o.it.k, words: r.words });
+                    html += '<div class="r-item" data-i="' + (items.length - 1) + '"><b>' + (o.it.k + 1) + '. ' + hl(o.it.title, r.words) + '</b><small>' + snippet(o.it, r.words) + '</small></div>';
+                });
+            }
+        }
+        res.innerHTML = html;
+        sel = (qs && items.length) ? 0 : -1;
+        paintSel();
+        res.classList.add('open');
+    }
+
+    function paintSel() {
+        var els = res.querySelectorAll('.r-item');
+        for (var i = 0; i < els.length; i++) els[i].classList.toggle('sel', i === sel);
+        if (els[sel]) els[sel].scrollIntoView({ block: 'nearest' });
+    }
+    function closeRes() { res.classList.remove('open'); }
+    function pick(i) { var it = items[i]; if (!it) return; closeRes(); q.blur(); go(it.k, it.words); }
+
+    // ===== Подсветка на слайде =====
+    function clearMarks() {
+        [].slice.call(document.querySelectorAll('mark.hl')).forEach(function (m) {
+            var p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize();
+        });
+    }
+    function markIn(el, words) {
+        var r = rx(words), walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null), nodes = [], n;
+        while ((n = walker.nextNode())) { if (!n.parentNode.closest('.footer')) nodes.push(n); }
+        nodes.forEach(function (node) {
+            var s = node.nodeValue, m, last = 0, found = false, frag = document.createDocumentFragment();
+            r.lastIndex = 0;
+            while ((m = r.exec(s))) {
+                if (!m[0].length) { r.lastIndex++; continue; }
+                found = true;
+                frag.appendChild(document.createTextNode(s.slice(last, m.index)));
+                var mk = document.createElement('mark'); mk.className = 'hl'; mk.textContent = m[0]; frag.appendChild(mk);
+                last = m.index + m[0].length;
+            }
+            if (!found) return;
+            frag.appendChild(document.createTextNode(s.slice(last)));
+            node.parentNode.replaceChild(frag, node);
+        });
+    }
+    function go(k, words) {
+        clearMarks();
+        if (words && words.length) markIn(slides[k], words);
+        var m = (words && words.length) ? slides[k].querySelector('mark.hl') : null;
+        var doc = isDoc();
+        show(k, !!(m && doc));
+        if (m && doc) { lock = true; m.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(function () { lock = false; }, 700); }
+    }
+
+    // ===== Навигация и режимы =====
+    function isDoc() { return userMode ? userMode === 'doc' : window.innerWidth < 1000; }
+
+    function updUI() {
+        counter.textContent = (cur + 1) + ' / ' + total;
+        progress.style.width = ((cur + 1) / total * 100) + '%';
+        slides.forEach(function (s, k) { s.classList.toggle('active', k === cur); });
+        if (!host) { try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) {} }
+    }
+
+    function show(n, noScroll) {
+        cur = Math.max(0, Math.min(total - 1, n));
+        if (isDoc()) {
+            updUI();
+            if (!noScroll) { lock = true; slides[cur].scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(function () { lock = false; }, 700); }
+            return;
+        }
+        slides.forEach(function (s, k) { s.classList.toggle('prev', k < cur); });
+        updUI();
+    }
+
+    function fit() {
+        if (isDoc()) { deck.style.transform = 'none'; return; }
+        var s = Math.min(window.innerWidth / 1300, (window.innerHeight - 108) / 740);
+        deck.style.transform = 'scale(' + s + ')';
+    }
+
+    function applyMode() {
+        var d = isDoc();
+        document.body.classList.toggle('doc', d);
+        modeBtn.textContent = d ? '🖥 Слайды' : '📄 Лента';
+        modeBtn.title = d ? 'Показать как слайды' : 'Показать лентой (удобно в узкой панели)';
+        fit();
+        if (d) {
+            slides.forEach(function (s) { s.classList.remove('prev'); });
+            updUI();
+            lock = true; slides[cur].scrollIntoView({ block: 'start' }); setTimeout(function () { lock = false; }, 100);
+        } else show(cur);
+    }
+
+    vp.addEventListener('scroll', function () {
+        if (!isDoc() || lock) return;
+        var top = vp.getBoundingClientRect().top + 90, k = 0;
+        slides.forEach(function (s, i) { if (s.getBoundingClientRect().top <= top) k = i; });
+        if (k !== cur) { cur = k; updUI(); }
+    });
+
+    function fullscreen() {
+        if (!document.fullscreenElement) { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {}); }
+        else if (document.exitFullscreen) document.exitFullscreen();
+    }
+
+    $('prev').onclick = function () { show(cur - 1); };
+    $('next').onclick = function () { show(cur + 1); };
+    $('toc-btn').onclick = function () { q.focus(); };
+    $('fs').onclick = fullscreen;
+    $('pr').onclick = function () { window.print(); };
+    modeBtn.onclick = function () { userMode = isDoc() ? 'deck' : 'doc'; applyMode(); };
+
+    // ===== События поиска =====
+    q.addEventListener('input', function () { if (!q.value.trim()) clearMarks(); render(); });
+    q.addEventListener('focus', render);
+    q.addEventListener('blur', function () { setTimeout(closeRes, 150); });
+    q.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); if (!res.classList.contains('open')) render(); sel = Math.min(items.length - 1, sel + 1); paintSel(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); paintSel(); }
+        else if (e.key === 'Enter') { e.preventDefault(); pick(sel < 0 ? 0 : sel); }
+        else if (e.key === 'Escape') { e.preventDefault(); if (q.value) { q.value = ''; clearMarks(); render(); } else { closeRes(); q.blur(); } }
+    });
+    res.addEventListener('mousedown', function (e) {
+        var c = e.target.closest('.chip');
+        if (c) { e.preventDefault(); var t = topics[+c.getAttribute('data-c')]; closeRes(); q.blur(); go(t[1], t[2] ? [norm(t[2])] : []); return; }
+        var it = e.target.closest('.r-item');
+        if (it) { e.preventDefault(); pick(+it.getAttribute('data-i')); }
+    });
+
+    // ===== Клавиатура =====
+    document.addEventListener('keydown', function (e) {
+        if (e.target === q) return;
+        var k = e.key;
+        if (k === '/' || ((e.ctrlKey || e.metaKey) && /^[fFkKаАлЛ]$/.test(k))) { e.preventDefault(); q.focus(); q.select(); return; }
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (k === 'Escape') {
+            if (document.querySelector('mark.hl')) { clearMarks(); return; }
+            if (host) host.postMessage({ type: 'quantum-help-close' }, '*');
+            return;
+        }
+        if (k === 'f' || k === 'F' || k === 'а' || k === 'А') { fullscreen(); return; }
+        if (k === 'p' || k === 'P' || k === 'з' || k === 'З') { e.preventDefault(); window.print(); return; }
+        if (isDoc()) {
+            if (k === 'ArrowRight') { show(cur + 1); e.preventDefault(); }
+            else if (k === 'ArrowLeft') { show(cur - 1); e.preventDefault(); }
+            else if (k === 'Home') { show(0); e.preventDefault(); }
+            else if (k === 'End') { show(total - 1); e.preventDefault(); }
+            return;
+        }
+        if (k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter') { show(cur + 1); e.preventDefault(); }
+        else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'Backspace') { show(cur - 1); e.preventDefault(); }
+        else if (k === 'Home') show(0);
+        else if (k === 'End') show(total - 1);
+    });
+
+    var tx = null;
+    document.addEventListener('touchstart', function (e) { tx = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchend', function (e) {
+        if (tx === null || isDoc()) { tx = null; return; }
+        var dx = e.changedTouches[0].clientX - tx;
+        if (Math.abs(dx) > 50) show(cur + (dx < 0 ? 1 : -1));
+        tx = null;
+    });
+
+    // ===== Связь с калькулятором =====
+    if (host) {
+        [].forEach.call(document.querySelectorAll('.slide code'), function (c) {
+            var v = c.textContent.trim();
+            if (!/^[\d+\-*\/%().,;]+$/.test(v) || !/\d/.test(v)) return;
+            c.classList.add('try');
+            c.title = 'Клик — подставить в калькулятор';
+            c.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                try { host.postMessage({ type: 'quantum-insert', value: v }, '*'); } catch (err) {}
+                c.classList.add('sent');
+                setTimeout(function () { c.classList.remove('sent'); }, 600);
+            });
+        });
+    }
+    window.addEventListener('message', function (e) {
+        var d = e.data;
+        if (!d || d.type !== 'quantum-help-search' || (host && e.source !== host)) return;
+        q.value = d.q || '';
+        var r = search(q.value);
+        if (r && r.list.length) go(r.list[0].it.k, r.words);
+    });
+
+    window.addEventListener('resize', function () {
+        if (isDoc() !== document.body.classList.contains('doc')) applyMode(); else fit();
+    });
+
+    var start = host ? NaN : parseInt((location.hash || '').replace('#', ''), 10);
+    cur = isNaN(start) ? 0 : Math.max(0, Math.min(total - 1, start - 1));
+    applyMode();
+})();
+<\/script>
+</body>
+</html>
+</script>
+</body>
+</html>

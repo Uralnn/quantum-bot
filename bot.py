@@ -135,6 +135,10 @@ def process_pre_checkout(pre_checkout_query):
 def process_successful_payment(message):
     user_id = message.from_user.id
     device_id = user_pending_ids.get(user_id)
+    payment = message.successful_payment
+    amount = payment.total_amount // 100 if payment.currency == 'RUB' else payment.total_amount
+    payment_info = f"{amount} {payment.currency}"
+    username = f"@{message.from_user.username}" if message.from_user.username else "без username"
 
     if device_id:
         key = generate_key(device_id)
@@ -145,6 +149,20 @@ def process_successful_payment(message):
             f"Введите его в окно программы.",
             parse_mode='Markdown'
         )
+        sheet_url = os.environ.get('GOOGLE_SHEET_URL')
+        if sheet_url:
+            try:
+                payload = json.dumps({
+                    "user_id": str(user_id),
+                    "username": username,
+                    "device_id": str(device_id),
+                    "key": str(key),
+                    "payment_info": payment_info
+                }).encode('utf-8')
+                req = urllib.request.Request(sheet_url, data=payload, headers={'Content-Type': 'application/json'}, method='POST')
+                urllib.request.urlopen(req, timeout=10)
+            except Exception:
+                pass
         del user_pending_ids[user_id]
     else:
         bot.send_message(

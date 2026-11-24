@@ -5,6 +5,14 @@ from flask import Flask, request, abort, jsonify
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, LabeledPrice
 
+import uuid
+import json
+import base64
+import urllib.request
+
+YOOKASSA_SHOP_ID = os.environ.get('YOOKASSA_SHOP_ID')
+YOOKASSA_SECRET_KEY = os.environ.get('YOOKASSA_SECRET_KEY')
+
 # --- НАСТРОЙКИ ТОКЕНОВ И СЕРВЕРА ---
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL')
@@ -102,20 +110,46 @@ def handle_payment_choice(call):
             prices=[LabeledPrice(label="Лицензия", amount=PRICE_STARS)]
         )
 
-    elif call.data == 'pay_card':
+     elif call.data == 'pay_card':
         bot.answer_callback_query(call.id, "Формируем счёт ЮKassa...")
-        bot.send_message(
-            chat_id=user_id,
-            text=(
-                f"🧾 **Счёт на оплату через ЮKassa**\n\n"
-                f"📦 **Товар:** Лицензионный ключ активации\n"
-                f"🔑 **ID оборудования:** `{device_id}`\n"
-                f"💳 **Сумма к оплате:** {PRICE_RUB} ₽\n\n"
-                f"⏳ *Оплата банковской картой и по СБП находится на финальной стадии подключения. "
-                f"Для оплаты или по вопросам работы сервиса обращайтесь в поддержку: {SUPPORT_LINK}*"
-            ),
-            parse_mode='Markdown'
-        )
+        try:
+            auth = base64.b64encode(f"{YOOKASSA_SHOP_ID}:{YOOKASSA_SECRET_KEY}".encode()).decode()
+            payload = {
+                "amount": {"value": "260.00", "currency": "RUB"},
+                "confirmation": {"type": "redirect", "return_url": "https://t.me/QuantumCoreAuth_bot"},
+                "capture": True,
+                "description": f"Лицензионный ключ активации (ID: {device_id})",
+                "metadata": {"chat_id": str(user_id), "device_id": str(device_id)}
+            }
+            req = urllib.request.Request(
+                "https://yookassa.ru",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Authorization": f"Basic {auth}",
+                    "Idempotence-Key": str(uuid.uuid4()),
+                    "Content-Type": "application/json"
+                },
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                res_data = json.loads(resp.read().decode("utf-8"))
+                pay_url = res_data["confirmation"]["confirmation_url"]
+
+            markup = InlineKeyboardMarkup()
+            markup.add(InlineKeyboardButton("💳 Перейти к оплате (260 ₽)", url=pay_url))
+            bot.send_message(
+                user_id,
+                f"🧾 *Счёт на оплату сформирован*\n\n"
+                f"• Товар: Лицензионный ключ активации\n"
+                f"• ID оборудования: `{device_id}`\n"
+                f"• Сумма: *260 ₽* (карта РФ / СБП)\n\n"
+                f"Нажмите кнопку ниже для оплаты. Сразу после подтверждения платежа ключ придёт в этот чат автоматически.",
+                parse_mode="Markdown",
+                reply_markup=markup
+            )
+        except Exception as e:
+            bot.send_message(user_id, f"❌ Не удалось создать платёж. Попробуйте позже или напишите в поддержку {SUPPORT_LINK}.")
+
 # --- ПОДТВЕРЖДЕНИЕ ОПЛАТЫ И ВЫДАЧА КЛЮЧА ---
 @bot.pre_checkout_query_handler(func=lambda query: True)
 def process_pre_checkout(pre_checkout_query):
@@ -177,6 +211,26 @@ def webhook():
         return '', 200
     else:
         abort(403)
+        
+@app.route('/yookassa', methods=['POST'])
+def yookassa_webhook():
+    data = request.get_json(silent=True)
+    if data and data.get("event") == "payment.succeeded":
+        obj = data.get("object", {})
+        meta = obj.get("metadata", {})
+        chat_id = meta.get("chat_id")
+        device_id = meta.get("device_id")
+        if chat_id and device_id:
+            key = generate_key(device_id)
+            if key:
+                bot.send_message(
+                    int(chat_id),
+                    f"✅ *Оплата получена! Спасибо за покупку.*\n\n"
+                    f"🔑 Ваш лицензионный ключ:\n`{key}`\n\n"
+                    f"Скопируйте ключ и вставьте его в окно активации программы.",
+                    parse_mode="Markdown"
+                )
+    return "OK", 200
 
 if __name__ == '__main__':
     bot.remove_webhook()

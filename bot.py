@@ -109,8 +109,8 @@ def handle_payment_choice(call):
             currency="XTR",
             prices=[LabeledPrice(label="Лицензия", amount=PRICE_STARS)]
         )
-
-     elif call.data == 'pay_card':
+    
+    elif call.data == 'pay_card':
         bot.answer_callback_query(call.id, "Формируем счёт ЮKassa...")
         try:
             auth = base64.b64encode(f"{YOOKASSA_SHOP_ID}:{YOOKASSA_SECRET_KEY}".encode()).decode()

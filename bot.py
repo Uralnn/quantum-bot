@@ -111,47 +111,17 @@ def handle_payment_choice(call):
         )
     
     elif call.data == 'pay_card':
-        bot.answer_callback_query(call.id, "Формируем счёт ЮKassa...")
-        try:
-            auth = base64.b64encode(f"{YOOKASSA_SHOP_ID}:{YOOKASSA_SECRET_KEY}".encode()).decode()
-            payload = {
-                "amount": {"value": "260.00", "currency": "RUB"},
-                "confirmation": {"type": "redirect", "return_url": "https://t.me/QuantumCoreAuth_bot"},
-                "capture": True,
-                "description": f"Лицензионный ключ активации (ID: {device_id})",
-                "metadata": {"chat_id": str(user_id), "device_id": str(device_id)}
-            }
-            req = urllib.request.Request(
-                "https://yookassa.ru",
-                data=json.dumps(payload).encode("utf-8"),
-                headers={
-                    "Authorization": f"Basic {auth}",
-                    "Idempotence-Key": str(uuid.uuid4()),
-                    "Content-Type": "application/json"
-                },
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                res_data = json.loads(resp.read().decode("utf-8"))
-                pay_url = res_data["confirmation"]["confirmation_url"]
-
-            markup = InlineKeyboardMarkup()
-            markup.add(InlineKeyboardButton("💳 Перейти к оплате (260 ₽)", url=pay_url))
-            bot.send_message(
-                user_id,
-                f"🧾 *Счёт на оплату сформирован*\n\n"
-                f"• Товар: Лицензионный ключ активации\n"
-                f"• ID оборудования: `{device_id}`\n"
-                f"• Сумма: *260 ₽* (карта РФ / СБП)\n\n"
-                f"Нажмите кнопку ниже для оплаты. Сразу после подтверждения платежа ключ придёт в этот чат автоматически.",
-                parse_mode="Markdown",
-                reply_markup=markup
-            )
-        except urllib.error.HTTPError as e:
-            err_body = e.read().decode("utf-8", errors="ignore")
-            bot.send_message(user_id, f"❌ Ошибка ЮKassa ({e.code}):\n{err_body}")
-        except Exception as e:
-            bot.send_message(user_id, f"❌ Ошибка: {e}")
+        bot.answer_callback_query(call.id, "Формируем счёт на оплату...")
+        provider_token = os.environ.get('PROVIDER_TOKEN', '')
+        bot.send_invoice(
+            chat_id=user_id,
+            title="Лицензионный ключ активации",
+            description=f"Активация полной версии для ID: {device_id}",
+            invoice_payload="license_payload",
+            provider_token=provider_token,
+            currency="RUB",
+            prices=[LabeledPrice(label="Лицензия", amount=26000)]
+        )
 
 # --- ПОДТВЕРЖДЕНИЕ ОПЛАТЫ И ВЫДАЧА КЛЮЧА ---
 @bot.pre_checkout_query_handler(func=lambda query: True)

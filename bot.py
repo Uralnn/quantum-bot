@@ -147,7 +147,7 @@ def handle_payment_choice(call):
                 parse_mode="Markdown",
                 reply_markup=markup
             )
-                except urllib.error.HTTPError as e:
+        except urllib.error.HTTPError as e:
             err_body = e.read().decode("utf-8", errors="ignore")
             bot.send_message(user_id, f"❌ Ошибка ЮKassa ({e.code}):\n{err_body}")
         except Exception as e:

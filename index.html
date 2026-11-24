@@ -129,22 +129,17 @@
 <!-- Скрипт для корректного открытия бота -->
 <script>
 function buyKey() {
-    const botUsername = 'QuantumCoreAuth_bot';
-    const deepLink = `https://t.me/${botUsername}`;
+    const botLink = 'https://t.me/QuantumCoreAuth_bot';
 
-    // 1. Копируем ID оборудования в буфер обмена
     try {
         const idText = document.getElementById('device-id-display').innerText;
         navigator.clipboard.writeText(idText);
     } catch (e) {}
 
-    // 2. Если открыто внутри Telegram (Mini App)
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-        Telegram.WebApp.openTelegramLink(deepLink);
-        Telegram.WebApp.close();
+    if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openTelegramLink === 'function') {
+        window.Telegram.WebApp.openTelegramLink(botLink);
     } else {
-        // 3. Если открыто на компьютере (в окне приложения или браузере)
-        window.location.href = `tg://resolve?domain=${botUsername}`;
+        window.open(botLink, '_blank');
     }
 }
 </script>
